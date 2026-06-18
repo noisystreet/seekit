@@ -75,4 +75,8 @@ pub struct Cli {
     /// Output file path (auto-detects format from extension: .json, .csv, .md, .txt)
     #[arg(short = 'o', long)]
     pub output: Option<String>,
+
+    /// Generate shell completion script (bash, zsh, fish, powershell, elvish)
+    #[arg(long, value_name = "SHELL")]
+    pub completion: Option<String>,
 }

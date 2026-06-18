@@ -34,8 +34,11 @@ pub mod error;
 pub mod fetcher;
 pub mod output;
 
+use std::io::Write;
 use std::time::Instant;
 
+use clap::CommandFactory;
+use clap_complete::{generate, Shell};
 use cli::Cli;
 use engine::{EngineConfig, EngineType, SearchEngine};
 use error::Result;
@@ -188,6 +191,9 @@ pub async fn run() -> anyhow::Result<()> {
     }
     if cli.init_config {
         return handle_init_config();
+    }
+    if let Some(ref shell_str) = cli.completion {
+        return handle_completion(shell_str);
     }
 
     // 验证并准备搜索参数
@@ -367,5 +373,25 @@ fn handle_init_config() -> anyhow::Result<()> {
         "Default config created at: {}",
         config::SearchConfig::default_path().display()
     );
+    Ok(())
+}
+
+/// 生成 shell 自动补全脚本
+fn handle_completion(shell_str: &str) -> anyhow::Result<()> {
+    let shell = match shell_str {
+        "bash" => Shell::Bash,
+        "zsh" => Shell::Zsh,
+        "fish" => Shell::Fish,
+        "powershell" | "pwsh" => Shell::PowerShell,
+        "elvish" => Shell::Elvish,
+        _ => anyhow::bail!(
+            "Unknown shell: {}. Supported: bash, zsh, fish, powershell, elvish",
+            shell_str
+        ),
+    };
+    let mut cmd = Cli::command();
+    let mut stdout = std::io::stdout();
+    generate(shell, &mut cmd, "seekit", &mut stdout);
+    stdout.flush()?;
     Ok(())
 }
