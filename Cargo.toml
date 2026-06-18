@@ -18,7 +18,7 @@ clap = { version = "4", features = ["derive"] }
 reqwest = { version = "0.12", features = ["json"] }
 
 # HTML parsing (search result extraction + page content)
-scraper = "0.21"
+scraper = "0.27"
 
 # Serialization (JSON output + config)
 serde = { version = "1", features = ["derive"] }
