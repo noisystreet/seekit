@@ -1,0 +1,12 @@
+# Default owners
+* @search-tool-rs/maintainers
+
+# Core source code
+/src/engine/ @search-tool-rs/maintainers
+
+# CI configuration
+/.github/ @search-tool-rs/maintainers
+
+# Documentation
+*.md @search-tool-rs/maintainers
+docs/adr/DESIGN.md @search-tool-rs/maintainers

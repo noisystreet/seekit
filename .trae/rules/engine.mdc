@@ -1,0 +1,7 @@
+# 引擎模块规则
+
+- `engine/trait.rs` 中的 `SearchEngine` trait 是扩展点，新增引擎需实现此 trait
+- `engine/duckduckgo.rs` 中不得使用 `unwrap()` / `expect()`
+- `engine/searxng.rs` 中不得使用 `unwrap()` / `expect()`
+- 所有引擎的 `search()` 方法签名必须与 trait 一致
+- 新增引擎需在 `engine/mod.rs` 的 `EngineType` 枚举注册，并在 `lib.rs` 的 `create_engine()` 中添加分发逻辑

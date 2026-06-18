@@ -1,0 +1,96 @@
+# SearXNG settings.yml — optimized for seekit CLI
+use_default_settings: true
+
+general:
+  instance_name: "seekit SearXNG"
+  debug: false
+  privacypolicy_url: false
+  contact_url: false
+  enable_metrics: false
+
+server:
+  port: 8080
+  bind_address: "0.0.0.0"
+  secret_key: "dc783ff6171f04c83aab296c49c9bffe6a1a1cf1912c676809aa977f18c1eccd"  # ⚠️ Replace with your own in production
+  base_url: "http://localhost:8080/"
+  # Disable rate limiter for CLI/Agent access (no JS needed)
+  limiter: false
+  # JSON output is enabled for seekit (see search.formats)
+  image_proxy: false
+
+# Proxy all outgoing search traffic through host Privoxy
+outgoing:
+  proxies:
+    http: http://localhost:8118
+    https: http://localhost:8118
+  # Direct access (no proxy)
+  no_proxy: localhost,127.0.0.1
+
+ui:
+  static_use_hash: true
+  default_locale: ""
+  default_theme: simple
+  theme_args:
+    simple_style: dark
+
+search:
+  # Safe search: 0=off, 1=moderate, 2=strict
+  safe_search: 0
+  # Default search language (empty = no restriction)
+  default_lang: "en"
+  # Enable JSON output format for seekit
+  formats:
+    - html
+    - json
+  autocomplete: ""
+  # Engine ban time on failure (seconds)
+  ban_time_on_fail: 10
+  max_ban_time_on_fail: 300
+
+# Enabled engines: stable, high-quality results
+engines:
+  # Google
+  - name: google
+    engine: google
+    shortcut: g
+    disabled: false
+
+  # Bing
+  - name: bing
+    engine: bing
+    shortcut: b
+    disabled: false
+
+  # DuckDuckGo
+  - name: duckduckgo
+    engine: duckduckgo
+    shortcut: ddg
+    disabled: false
+
+  # Brave
+  - name: brave
+    engine: brave
+    shortcut: be
+    disabled: false
+
+  # Wikipedia
+  - name: wikipedia
+    engine: wikipedia
+    shortcut: wp
+    disabled: false
+
+  # GitHub
+  - name: github
+    engine: github
+    shortcut: gh
+    disabled: false
+
+  # Engines disabled by default — enable as needed
+  - name: yahoo
+    disabled: true
+
+  - name: yandex
+    disabled: true
+
+  - name: qwant
+    disabled: true

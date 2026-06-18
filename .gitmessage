@@ -1,0 +1,12 @@
+# search_tool commit message template
+# 使用方式: git config commit.template .gitmessage
+#
+# 格式:
+# <type>(<scope>): <subject>
+# <BLANK LINE>
+# <body>
+# <BLANK LINE>
+# <footer>
+
+# Types: feat, fix, docs, style, refactor, perf, test, chore, ci
+# Scopes: engine, cli, output, cache, config, ci, docs, deps

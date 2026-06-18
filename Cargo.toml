@@ -1,0 +1,58 @@
+[package]
+name = "seekit"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.81"
+description = "A CLI web search tool using DuckDuckGo, designed for terminal and Agent usage"
+license = "MIT"
+repository = "https://github.com/noisystreet/seekit"
+homepage = "https://github.com/noisystreet/seekit"
+keywords = ["search", "cli", "duckduckgo", "searxng", "search-engine"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+# CLI argument parsing
+clap = { version = "4", features = ["derive"] }
+
+# Async HTTP client
+reqwest = { version = "0.12", features = ["json"] }
+
+# HTML parsing (search result extraction + page content)
+scraper = "0.21"
+
+# Serialization (JSON output + config)
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+
+# Async runtime
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
+
+# Error handling
+thiserror = "2"
+anyhow = "1"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# URL encoding (search URL building)
+urlencoding = "2"
+
+# File paths (cache & config dirs)
+dirs = "6"
+
+# Cache (SHA256 key hashing)
+sha2 = "0.10"
+hex = "0.4"
+
+# Async trait
+async-trait = "0.1"
+
+# CSV output
+csv = "1"
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
