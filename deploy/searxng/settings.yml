@@ -18,12 +18,11 @@ server:
   # JSON output is enabled for seekit (see search.formats)
   image_proxy: false
 
-# Proxy all outgoing search traffic through host Privoxy
+# Use host proxy for outbound access
 outgoing:
   proxies:
     http: http://localhost:8118
     https: http://localhost:8118
-  # Direct access (no proxy)
   no_proxy: localhost,127.0.0.1
 
 ui:
