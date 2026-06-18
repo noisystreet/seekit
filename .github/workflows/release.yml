@@ -1,0 +1,25 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build (release)
+        run: cargo build --release --locked --verbose
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: seekit-${{ github.ref_name }}-linux-x86_64
+          path: target/release/seekit

@@ -1,0 +1,9 @@
+# Rust 代码格式化配置
+# 参见: https://rust-lang.github.io/rustfmt/
+
+max_width = 100
+tab_spaces = 4
+edition = "2021"
+newline_style = "Unix"
+use_small_heuristics = "Default"
+reorder_imports = true

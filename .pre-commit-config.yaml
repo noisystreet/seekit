@@ -1,0 +1,48 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: check-toml
+
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.29.5
+    hooks:
+      - id: typos
+
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: cargo fmt
+        description: Format Rust code with rustfmt
+        entry: cargo fmt --check
+        language: system
+        pass_filenames: false
+        files: \.rs$
+
+      - id: cargo-clippy
+        name: cargo clippy
+        description: Lint Rust code with clippy
+        entry: cargo clippy -- -D warnings
+        language: system
+        pass_filenames: false
+        files: \.rs$
+
+      - id: lizard-complexity
+        name: lizard complexity
+        description: Check code complexity (max CCN=10, max length=120)
+        entry: bash -c 'lizard --CCN 10 --length 120 --warnings_only "$@" | grep -q . && { lizard --CCN 10 --length 120 --warnings_only "$@"; exit 1; } || exit 0' --
+        language: system
+        pass_filenames: true
+        files: \.rs$
+
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.0.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: []

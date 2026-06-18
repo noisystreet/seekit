@@ -1,0 +1,25 @@
+# Rust 构建产物
+/target
+
+# 依赖目录（Rust 使用 Cargo.lock 而非 node_modules）
+# Cargo.lock 对于 binary 项目应提交
+
+# IDE/编辑器配置
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 环境文件
+.env
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 缓存目录（运行时产生）
+*.cache
+
+# 日志文件
+*.log
