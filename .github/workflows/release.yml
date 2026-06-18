@@ -19,7 +19,7 @@ jobs:
         run: cargo build --release --locked --verbose
 
       - name: Upload binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: seekit-${{ github.ref_name }}-linux-x86_64
           path: target/release/seekit
