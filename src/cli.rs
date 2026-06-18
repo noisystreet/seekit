@@ -79,4 +79,8 @@ pub struct Cli {
     /// Generate shell completion script (bash, zsh, fish, powershell, elvish)
     #[arg(long, value_name = "SHELL")]
     pub completion: Option<String>,
+
+    /// Start MCP stdio server for AI Agent integration
+    #[arg(long)]
+    pub mcp: bool,
 }

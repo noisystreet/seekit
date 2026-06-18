@@ -32,6 +32,7 @@ pub mod config;
 pub mod engine;
 pub mod error;
 pub mod fetcher;
+pub mod mcp;
 pub mod output;
 
 use std::io::Write;
@@ -194,6 +195,9 @@ pub async fn run() -> anyhow::Result<()> {
     }
     if let Some(ref shell_str) = cli.completion {
         return handle_completion(shell_str);
+    }
+    if cli.mcp {
+        return mcp::run_mcp_server().await;
     }
 
     // 验证并准备搜索参数
