@@ -57,6 +57,16 @@ deploy/
 7. **CHANGELOG language**: `CHANGELOG.md` must be written in English only.
 8. **Project structure sync**: When adding or moving files under `src/` or `docs/`, update the directory structure in this file and `docs/adr/DESIGN.md` accordingly to keep them in sync.
 9. **Commit rules**: Never use `--no-verify` or `-n` when committing. All pre-commit hooks must run. If a hook fails, fix the issue rather than bypassing it.
+10. **GitHub Flow**: All development must follow the GitHub Flow process:
+    - **Always start by pulling latest main**: `git checkout main && git pull`
+    - Create a new branch from `main` for each feature/fix (`git checkout -b feat/xxx` or `fix/xxx`)
+    - Commit changes on the branch (never commit directly to main)
+    - Push the branch to origin
+    - Create a Pull Request on GitHub (title = commit message, body = summary of changes)
+    - Wait for CI to pass before merging
+    - Squash merge into main on GitHub
+    - Delete the remote branch after merge
+    - Sync locally: `git checkout main && git pull`
 
 ## Verification
 
