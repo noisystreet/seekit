@@ -198,6 +198,46 @@ seekit --clear-cache
 
 ---
 
+## MCP 服务（AI Agent 集成）
+
+seekit 支持 [Model Context Protocol](https://modelcontextprotocol.io/) 协议，AI Agent（Claude Desktop、Gemini 等）可直接调用搜索能力。
+
+```bash
+# 启动 MCP stdio 服务
+seekit --mcp
+```
+
+### 可用工具
+
+| 工具 | 说明 |
+|------|------|
+| `search` | 通过 DuckDuckGo、SearXNG 或 auto 模式搜索网页 |
+| `fetch` | 获取 URL 内容并转换为 Markdown |
+
+### Claude Desktop 配置
+
+添加到 `claude_desktop_config.json`：
+
+```json
+{
+  "mcpServers": {
+    "seekit": {
+      "command": "seekit",
+      "args": ["--mcp"]
+    }
+  }
+}
+```
+
+### 手动测试
+
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call",
+  "params":{"name":"search","arguments":{"query":"rust"}}}' | seekit --mcp
+```
+
+---
+
 ## 配置管理
 
 配置文件遵循 XDG 规范，位于 `~/.config/seekit/config.toml`。

@@ -17,6 +17,7 @@ A Rust CLI web search tool supporting DuckDuckGo and SearXNG engines, designed f
 - **Caching**: Disk cache with configurable TTL (default 5 min)
 - **Anti-scraping**: User-Agent rotation, automatic retry, CAPTCHA detection
 - **Embeddable**: Use as CLI tool or as a Rust library
+- **MCP Server**: AI Agent integration via Model Context Protocol (`--mcp`)
 
 ## Quick Start
 
@@ -54,6 +55,44 @@ cargo run -- --clear-cache
 | SearXNG engine | `seekit -e searxng --searxng-url http://localhost:8080 "query"` |
 | Limit results | `seekit -n 3 "query"` |
 | Skip cache | `seekit --no-cache "query"` |
+
+## MCP Server (AI Agent Integration)
+
+seekit supports the [Model Context Protocol](https://modelcontextprotocol.io/) for AI Agent integration.
+
+```bash
+# Start MCP stdio server
+seekit --mcp
+```
+
+### Claude Desktop Configuration
+
+Add to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "seekit": {
+      "command": "seekit",
+      "args": ["--mcp"]
+    }
+  }
+}
+```
+
+### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `search` | Search the web via DuckDuckGo, SearXNG, or auto mode |
+| `fetch` | Fetch a URL and convert content to Markdown |
+
+### Manual Test
+
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call",
+  "params":{"name":"search","arguments":{"query":"rust programming"}}}' | seekit --mcp
+```
 
 ## License
 

@@ -198,6 +198,45 @@ seekit --clear-cache
 
 ---
 
+## MCP Server (AI Agent Integration)
+
+seekit supports the [Model Context Protocol](https://modelcontextprotocol.io/) for AI Agent integration. Start the MCP stdio server with:
+
+```bash
+seekit --mcp
+```
+
+### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `search` | Search the web via DuckDuckGo, SearXNG, or auto mode |
+| `fetch` | Fetch a URL and convert content to Markdown |
+
+### Claude Desktop Configuration
+
+Add to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "seekit": {
+      "command": "seekit",
+      "args": ["--mcp"]
+    }
+  }
+}
+```
+
+### Manual Test
+
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call",
+  "params":{"name":"search","arguments":{"query":"rust programming"}}}' | seekit --mcp
+```
+
+---
+
 ## Configuration
 
 Config file follows XDG spec at `~/.config/seekit/config.toml`.
