@@ -62,3 +62,22 @@ jobs:
 
       - name: Security audit
         run: cargo audit
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-tarpaulin
+        run: cargo install cargo-tarpaulin --locked
+
+      - name: Generate coverage
+        run: cargo tarpaulin --out xml
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          fail_ci_if_error: false

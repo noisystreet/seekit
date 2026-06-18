@@ -1,6 +1,9 @@
 # seekit
 
 [![CI](https://github.com/noisystreet/seekit/actions/workflows/ci.yml/badge.svg)](https://github.com/noisystreet/seekit/actions/workflows/ci.yml)
+[![crates.io](https://img.shields.io/crates/v/seekit)](https://crates.io/crates/seekit)
+[![docs.rs](https://img.shields.io/docsrs/seekit)](https://docs.rs/seekit)
+[![codecov](https://codecov.io/gh/noisystreet/seekit/branch/main/graph/badge.svg)](https://codecov.io/gh/noisystreet/seekit)
 
 [中文版](README.zh.md)
 
