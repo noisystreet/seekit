@@ -17,6 +17,7 @@
 - **缓存**：磁盘缓存，TTL 可配置（默认 5 分钟）
 - **反爬对抗**：User-Agent 轮换、自动重试、CAPTCHA 检测
 - **可嵌入**：既可作为 CLI 工具，也可作为 Rust 库嵌入
+- **MCP 服务**：支持 Model Context Protocol，AI Agent 可直接调用（`--mcp`）
 
 ## 快速开始
 
@@ -53,6 +54,44 @@ cargo run -- --clear-cache
 | 指定引擎 | `seekit -e searxng --searxng-url http://localhost:8080 "query"` |
 | 限制结果 | `seekit -n 3 "query"` |
 | 跳过缓存 | `seekit --no-cache "query"` |
+
+## MCP 服务（AI Agent 集成）
+
+seekit 支持 [Model Context Protocol](https://modelcontextprotocol.io/)，AI Agent（Claude Desktop、Gemini 等）可直接调用搜索能力。
+
+```bash
+# 启动 MCP stdio 服务
+seekit --mcp
+```
+
+### Claude Desktop 配置
+
+添加到 `claude_desktop_config.json`：
+
+```json
+{
+  "mcpServers": {
+    "seekit": {
+      "command": "seekit",
+      "args": ["--mcp"]
+    }
+  }
+}
+```
+
+### 可用工具
+
+| 工具 | 说明 |
+|------|------|
+| `search` | 通过 DuckDuckGo、SearXNG 或 auto 模式搜索网页 |
+| `fetch` | 获取 URL 内容并转换为 Markdown |
+
+### 手动测试
+
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call",
+  "params":{"name":"search","arguments":{"query":"rust"}}}' | seekit --mcp
+```
 
 ## 许可证
 
