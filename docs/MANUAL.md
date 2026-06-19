@@ -60,6 +60,7 @@ seekit -e ddg "query"           # shortcut alias
 - Reduce request frequency
 - Using `--no-safe` may reduce detection
 - Switch to SearXNG engine
+- Configure a proxy: `seekit --proxy http://127.0.0.1:7890 "query"`
 
 ### SearXNG (self-hosted)
 
@@ -91,6 +92,8 @@ services:
 mkdir -p searxng
 docker compose up -d
 ```
+
+By default, the provided `deploy/searxng/settings.yml` enables Google, Bing, DuckDuckGo, Brave, Baidu, and Sogou engines. See [Proxies & Network](#proxies--network) section for outbound proxy configuration.
 
 #### Usage
 
@@ -213,6 +216,46 @@ seekit --mcp
 | `search` | Search the web via DuckDuckGo, SearXNG, or auto mode |
 | `fetch` | Fetch a URL and convert content to Markdown |
 
+### Tool Parameters
+
+#### `search` parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `query` | string | — | Search query (required) |
+| `engine` | string | `duckduckgo` | Engine: `duckduckgo`, `searxng`, `auto` |
+| `max_results` | integer | `10` | Max results |
+| `page` | integer | `1` | Page number |
+| `lang` | string | `en` | Search language (SearXNG only) |
+| `searxng_url` | string | — | SearXNG instance URL |
+| `proxy` | string | — | HTTP proxy URL (e.g. `http://127.0.0.1:7890`) |
+
+#### `fetch` parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `url` | string | — | URL to fetch (required) |
+| `max_content_length` | integer | `5000` | Max chars of content |
+| `proxy` | string | — | HTTP proxy URL |
+
+### Trae IDE Configuration
+
+Create `.trae/mcp.json` in your project root:
+
+```json
+{
+  "mcpServers": {
+    "seekit": {
+      "command": "/path/to/seekit",
+      "args": ["--mcp"],
+      "env": {}
+    }
+  }
+}
+```
+
+Then enable **Settings > MCP > Enable project-level MCP**.
+
 ### Claude Desktop Configuration
 
 Add to your `claude_desktop_config.json`:
@@ -233,6 +276,41 @@ Add to your `claude_desktop_config.json`:
 ```bash
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/call",
   "params":{"name":"search","arguments":{"query":"rust programming"}}}' | seekit --mcp
+```
+
+## Proxies & Network
+
+When DuckDuckGo or SearXNG engines cannot directly reach the internet, configure a proxy.
+
+### Via CLI (`--proxy`)
+
+```bash
+seekit --proxy http://127.0.0.1:7890 "query"
+```
+
+### Via Environment Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `HTTPS_PROXY` / `https_proxy` | HTTPS proxy | `http://localhost:8118` |
+| `HTTP_PROXY` / `http_proxy` | HTTP proxy | `http://localhost:8118` |
+| `ALL_PROXY` / `all_proxy` | Fallback proxy | `http://localhost:8118` |
+
+Precedence: `--proxy` CLI flag > `HTTPS_PROXY` > `http_proxy` > `ALL_PROXY`.
+
+```bash
+HTTPS_PROXY=http://localhost:8118 seekit "query"
+```
+
+### SearXNG Outbound Proxy
+
+For the self-hosted SearXNG, configure outbound proxy in `settings.yml`:
+
+```yaml
+outgoing:
+  proxies:
+    http: http://localhost:8118
+    https: http://localhost:8118
 ```
 
 ---
@@ -259,21 +337,6 @@ cache_ttl_secs = 300
 
 ---
 
-## Environment Variables
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `RUST_LOG` | Log level | `seekit=debug`, `seekit=warn` |
-| `http_proxy` | HTTP proxy | `http://localhost:8118` |
-| `https_proxy` | HTTPS proxy | `http://localhost:8118` |
-
-```bash
-RUST_LOG=seekit=debug seekit "query"
-https_proxy=http://localhost:8118 seekit "query"
-```
-
----
-
 ## Full CLI Reference
 
 ```
@@ -283,17 +346,24 @@ Arguments:
   [QUERY]             Search query (optional with --clear-cache or --init-config)
 
 Options:
-  -e, --engine <ENGINE>            Search engine: duckduckgo, searxng [default: duckduckgo]
+  -e, --engine <ENGINE>            Search engine: duckduckgo, searxng, auto [default: duckduckgo]
       --searxng-url <SEARXNG_URL>  SearXNG instance URL (required for searxng engine)
+      --proxy <PROXY>              HTTP proxy URL (e.g. http://127.0.0.1:7890)
       --lang <LANG>                Search language: en, zh, ja, etc. (SearXNG only) [default: en]
   -f, --format <FORMAT>            Output format: terminal, json, raw [default: terminal]
   -n, --max-results <MAX_RESULTS>  Max results [default: 10]
+  -p, --page <PAGE>                Page number [default: 1]
   -t, --timeout <TIMEOUT>          Request timeout in seconds [default: 10]
+  -F, --fetch                      Fetch page content (HTML to Markdown)
+      --max-content-length <LEN>   Max chars per fetched page [default: 5000]
       --cache-ttl <CACHE_TTL>      Cache TTL in seconds [default: 300]
       --no-safe                    Disable safe search
       --no-cache                   Skip cache
       --clear-cache                Clear all cached results
       --init-config                Generate default config file
+  -o, --output <FILE>              Output file (format auto-detected from extension)
+      --completion <SHELL>         Generate shell completion script
+      --mcp                        Start MCP stdio server
   -h, --help                       Print help
   -V, --version                    Print version
 ```

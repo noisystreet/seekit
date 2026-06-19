@@ -88,9 +88,11 @@ fn create_engine(cli: &Cli) -> Result<Box<dyn SearchEngine>> {
         .parse()
         .map_err(|e: String| error::SearchError::Config(e))?;
 
+    let proxy_url = cli.proxy.as_deref();
+
     match engine_type {
         EngineType::DuckDuckGo => {
-            let engine = engine::duckduckgo::DuckDuckGo::new()?;
+            let engine = engine::duckduckgo::DuckDuckGo::new(proxy_url)?;
             Ok(Box::new(engine))
         }
         EngineType::SearXNG => {
@@ -100,7 +102,9 @@ fn create_engine(cli: &Cli) -> Result<Box<dyn SearchEngine>> {
                 .clone()
                 .or_else(|| config::SearchConfig::load().general.searxng_url);
             let base_url = base_url.unwrap_or_else(|| "http://localhost:8080".to_string());
-            Ok(Box::new(engine::searxng::SearXNG::new(&base_url)?))
+            Ok(Box::new(engine::searxng::SearXNG::new(
+                &base_url, proxy_url,
+            )?))
         }
         EngineType::Auto => {
             let base_url = cli
@@ -108,7 +112,9 @@ fn create_engine(cli: &Cli) -> Result<Box<dyn SearchEngine>> {
                 .clone()
                 .or_else(|| config::SearchConfig::load().general.searxng_url)
                 .unwrap_or_else(|| "http://localhost:8080".to_string());
-            Ok(Box::new(engine::fusion::AutoEngine::new(&base_url)?))
+            Ok(Box::new(engine::fusion::AutoEngine::new(
+                &base_url, proxy_url,
+            )?))
         }
     }
 }
@@ -154,6 +160,7 @@ pub async fn search(cli: &Cli) -> Result<SearchResponse> {
     if cli.fetch {
         let fetcher_config = fetcher::FetcherConfig {
             max_content_length: cli.max_content_length,
+            proxy_url: cli.proxy.clone(),
             ..Default::default()
         };
         let fetcher = fetcher::Fetcher::new(fetcher_config)?;
@@ -178,13 +185,24 @@ pub async fn search(cli: &Cli) -> Result<SearchResponse> {
 pub async fn run() -> anyhow::Result<()> {
     let cli = <Cli as clap::Parser>::parse();
 
-    // 初始化日志
-    let _ = tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "seekit=warn".into()),
-        )
-        .try_init();
+    // 初始化日志（MCP 模式下输出到 stderr，避免污染 JSON-RPC）
+    let is_mcp = cli.mcp;
+    let _ = if is_mcp {
+        tracing_subscriber::fmt()
+            .with_env_filter(
+                tracing_subscriber::EnvFilter::try_from_default_env()
+                    .unwrap_or_else(|_| "seekit=warn".into()),
+            )
+            .with_writer(std::io::stderr)
+            .try_init()
+    } else {
+        tracing_subscriber::fmt()
+            .with_env_filter(
+                tracing_subscriber::EnvFilter::try_from_default_env()
+                    .unwrap_or_else(|_| "seekit=warn".into()),
+            )
+            .try_init()
+    };
 
     // 处理管理命令
     if cli.clear_cache {

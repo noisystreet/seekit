@@ -24,6 +24,10 @@ pub struct Cli {
     #[arg(long)]
     pub searxng_url: Option<String>,
 
+    /// HTTP proxy URL (e.g. http://127.0.0.1:7890). Overrides HTTPS_PROXY env var.
+    #[arg(long)]
+    pub proxy: Option<String>,
+
     /// Search language: en, zh, ja, etc. (SearXNG only)
     #[arg(long, default_value = "en")]
     pub lang: String,

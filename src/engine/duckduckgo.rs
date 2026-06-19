@@ -25,10 +25,9 @@ impl DuckDuckGo {
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:120.0) Gecko/20100101 Firefox/120.0",
     ];
 
-    pub fn new() -> Result<Self> {
-        let client = reqwest::Client::builder()
+    pub fn new(proxy_url: Option<&str>) -> Result<Self> {
+        let client = super::client_builder_with_proxy(proxy_url, 15)
             .user_agent(Self::USER_AGENTS[0])
-            .timeout(Duration::from_secs(15))
             .build()
             .map_err(SearchError::Http)?;
 
@@ -339,7 +338,7 @@ mod tests {
 
     #[test]
     fn test_build_url_safe_search() {
-        let ddg = DuckDuckGo::new().unwrap();
+        let ddg = DuckDuckGo::new(None).unwrap();
         let config = EngineConfig {
             safe_search: true,
             ..Default::default()
@@ -351,7 +350,7 @@ mod tests {
 
     #[test]
     fn test_build_url_no_safe_search() {
-        let ddg = DuckDuckGo::new().unwrap();
+        let ddg = DuckDuckGo::new(None).unwrap();
         let config = EngineConfig {
             safe_search: false,
             ..Default::default()
@@ -362,7 +361,7 @@ mod tests {
 
     #[test]
     fn test_build_url_query_encoding() {
-        let ddg = DuckDuckGo::new().unwrap();
+        let ddg = DuckDuckGo::new(None).unwrap();
         let config = EngineConfig::default();
         let url = ddg.build_url("rust web framework", &config);
         assert!(url.contains("rust+web+framework") || url.contains("rust%20web%20framework"));
@@ -390,7 +389,7 @@ mod tests {
 
     #[test]
     fn test_parse_results_normal() {
-        let ddg = DuckDuckGo::new().unwrap();
+        let ddg = DuckDuckGo::new(None).unwrap();
         let results = ddg.parse_results(sample_html()).unwrap();
         assert_eq!(results.len(), 2);
         assert_eq!(results[0].title, "Rust Programming Language");
@@ -402,7 +401,7 @@ mod tests {
 
     #[test]
     fn test_parse_results_empty_html() {
-        let ddg = DuckDuckGo::new().unwrap();
+        let ddg = DuckDuckGo::new(None).unwrap();
         let results = ddg.parse_results("<html><body></body></html>").unwrap();
         assert!(results.is_empty());
     }
@@ -423,7 +422,7 @@ mod tests {
   <div class="result__snippet">Real content</div>
 </div>
 "#;
-        let ddg = DuckDuckGo::new().unwrap();
+        let ddg = DuckDuckGo::new(None).unwrap();
         let results = ddg.parse_results(html).unwrap();
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].url, "https://real.example.com");
@@ -444,7 +443,7 @@ mod tests {
   </div>
 </div>
 "#;
-        let ddg = DuckDuckGo::new().unwrap();
+        let ddg = DuckDuckGo::new(None).unwrap();
         let results = ddg.parse_results(html).unwrap();
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].url, "https://real.example.com");
@@ -459,7 +458,7 @@ mod tests {
   </div>
 </div>
 "#;
-        let ddg = DuckDuckGo::new().unwrap();
+        let ddg = DuckDuckGo::new(None).unwrap();
         let results = ddg.parse_results(html).unwrap();
         assert!(results.is_empty());
     }
@@ -468,7 +467,7 @@ mod tests {
 
     #[test]
     fn test_random_user_agent_returns_valid() {
-        let ddg = DuckDuckGo::new().unwrap();
+        let ddg = DuckDuckGo::new(None).unwrap();
         let ua = ddg.random_user_agent();
         assert!(!ua.is_empty());
         assert!(ua.contains("Mozilla") || ua.contains("Chrome") || ua.contains("Firefox"));
