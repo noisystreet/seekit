@@ -1,0 +1,24 @@
+# GitHub Release 自动生成 Release Notes 模板
+# 参考: https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes
+
+changelog:
+  categories:
+    - title: 🚀 New Features
+      labels:
+        - feat
+        - enhancement
+    - title: 🐛 Bug Fixes
+      labels:
+        - fix
+        - bug
+    - title: 📝 Documentation
+      labels:
+        - docs
+    - title: 🔧 Maintenance
+      labels:
+        - chore
+        - ci
+        - deps
+    - title: Other Changes
+      labels:
+        - "*"
