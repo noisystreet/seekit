@@ -41,7 +41,7 @@ seekit/
 │   ├── lib.rs               # Public library API
 │   ├── cli.rs               # CLI argument parsing (clap)
 │   ├── engine/
-│   │   ├── mod.rs          # EngineType enum + dispatch
+│   │   ├── mod.rs          # EngineType enum, client_builder_with_proxy()
 │   │   ├── trait.rs        # SearchEngine trait + data structures
 │   │   ├── duckduckgo.rs   # DuckDuckGo engine
 │   │   ├── searxng.rs      # SearXNG engine
@@ -49,15 +49,28 @@ seekit/
 │   ├── config.rs             # Config file management
 │   ├── cache.rs              # Result cache
 │   ├── output.rs             # Output formatting
-│   ├── fetcher.rs            # Page content fetcher
-│   └── error.rs              # Unified error types
+│   ├── fetcher.rs            # Page content fetcher (HTML → Markdown)
+│   ├── error.rs              # Unified error types
+│   └── mcp.rs                # MCP stdio server
+│
+├── .trae/
+│   └── mcp.json              # Trae IDE project-level MCP configuration
 │
 ├── tests/
 │   └── integration_test.rs   # Integration tests
 │
 ├── docs/
+│   ├── MANUAL.md             # English user manual
+│   ├── MANUAL.zh.md          # Chinese user manual
+│   ├── CHANGELOG.md          # Changelog
 │   └── adr/
 │       └── DESIGN.md         # Architecture design document
+│
+├── deploy/
+│   ├── docker-compose.yml    # SearXNG deployment
+│   └── searxng/
+│       ├── settings.yml      # SearXNG config
+│       └── limiter.toml      # Rate limiter config
 │
 └── .github/
     ├── workflows/

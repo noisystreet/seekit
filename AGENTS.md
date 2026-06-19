@@ -51,8 +51,7 @@ deploy/
 1. **Dependency direction**: `engine/` → independent, `cli.rs` → independent, `lib.rs` orchestrates all. Reverse dependencies are prohibited.
 2. **Third-party libraries**: No hard restrictions, but any new dependency must be justified in the PR description.
 3. **Documentation changes**:
-   - `docs/adr/DESIGN.md` — requires manual approval before modification
-   - `AGENTS.md` — can be modified directly
+   - `AGENTS.md`, `docs/adr/DESIGN.md`, `docs/MANUAL.md`, `docs/MANUAL.zh.md` — all can be modified directly. Keep English and Chinese versions in sync.
 4. **Security red lines**:
    - Never include keys, tokens, certificates or other sensitive information in code or commits
    - Never bypass permission checks
