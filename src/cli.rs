@@ -16,7 +16,7 @@ pub struct Cli {
     /// Search query (optional with --clear-cache or --init-config)
     pub query: Option<String>,
 
-    /// Search engine: duckduckgo, searxng, auto
+    /// Search engine: duckduckgo, google, bing, searxng, auto
     #[arg(short = 'e', long, default_value = "duckduckgo")]
     pub engine: String,
 

@@ -91,31 +91,50 @@ fn create_engine(cli: &Cli) -> Result<Box<dyn SearchEngine>> {
     let proxy_url = cli.proxy.as_deref();
 
     match engine_type {
-        EngineType::DuckDuckGo => {
-            let engine = engine::duckduckgo::DuckDuckGo::new(proxy_url)?;
-            Ok(Box::new(engine))
-        }
+        EngineType::DuckDuckGo => Ok(Box::new(engine::duckduckgo::DuckDuckGo::new(proxy_url)?)),
+        EngineType::Google => Ok(Box::new(engine::google::Google::new(proxy_url)?)),
+        EngineType::Bing => Ok(Box::new(engine::bing::Bing::new(proxy_url)?)),
         EngineType::SearXNG => {
-            // 优先使用 CLI 参数 --searxng-url，其次从配置文件读取
-            let base_url = cli
-                .searxng_url
-                .clone()
-                .or_else(|| config::SearchConfig::load().general.searxng_url);
-            let base_url = base_url.unwrap_or_else(|| "http://localhost:8080".to_string());
+            let base_url = resolve_searxng_url(cli);
             Ok(Box::new(engine::searxng::SearXNG::new(
                 &base_url, proxy_url,
             )?))
         }
         EngineType::Auto => {
-            let base_url = cli
-                .searxng_url
-                .clone()
-                .or_else(|| config::SearchConfig::load().general.searxng_url)
-                .unwrap_or_else(|| "http://localhost:8080".to_string());
+            let base_url = resolve_searxng_url(cli);
             Ok(Box::new(engine::fusion::AutoEngine::new(
                 &base_url, proxy_url,
             )?))
         }
+    }
+}
+
+/// 解析 SearXNG URL：优先 CLI 参数，其次配置文件
+fn resolve_searxng_url(cli: &Cli) -> String {
+    cli.searxng_url
+        .clone()
+        .or_else(|| config::SearchConfig::load().general.searxng_url)
+        .unwrap_or_else(|| "http://localhost:8080".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::Parser;
+
+    #[test]
+    fn test_resolve_searxng_url_default_when_no_cli_and_no_config() {
+        // 无 CLI 参数、无配置文件时，应返回默认 URL
+        let cli = Cli::parse_from(&["seekit", "test"]);
+        let url = resolve_searxng_url(&cli);
+        assert_eq!(url, "http://localhost:8080");
+    }
+
+    #[test]
+    fn test_resolve_searxng_url_from_cli() {
+        let cli = Cli::parse_from(&["seekit", "--searxng-url", "http://myhost:8888", "test"]);
+        let url = resolve_searxng_url(&cli);
+        assert_eq!(url, "http://myhost:8888");
     }
 }
 
