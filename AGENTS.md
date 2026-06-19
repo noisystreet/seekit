@@ -101,6 +101,21 @@ cargo test           # Tests
 cargo build          # Build
 ```
 
+## Feature Flags
+
+```toml
+[features]
+default = []           # Minimal: search, JSON, Terminal, Markdown, MCP
+repl   = ["rustyline"] # Interactive REPL mode (--repl / -i)
+csv    = ["csv"]       # CSV output format (--format csv)
+```
+
+Install options:
+```bash
+cargo install seekit              # Minimal (REPL and CSV not included)
+cargo install seekit -F repl,csv  # Full installation
+```
+
 ## Conventions
 
 - Commit message format: `<type>(<scope>): <subject>` (English first line, Chinese body allowed)

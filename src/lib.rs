@@ -34,6 +34,7 @@ pub mod error;
 pub mod fetcher;
 pub mod mcp;
 pub mod output;
+#[cfg(feature = "repl")]
 pub mod repl;
 
 use std::io::Write;
@@ -240,8 +241,13 @@ pub async fn run() -> anyhow::Result<()> {
     }
 
     // REPL 交互模式
+    #[cfg(feature = "repl")]
     if cli.repl {
         return repl::run_repl(cli).await;
+    }
+    #[cfg(not(feature = "repl"))]
+    if cli.repl {
+        anyhow::bail!("REPL mode is not available. Install with: cargo install seekit -F repl");
     }
 
     // 验证并准备搜索参数
@@ -338,7 +344,12 @@ fn format_response_to_string(
             let json = serde_json::to_string_pretty(response)?;
             Ok(json)
         }
+        #[cfg(feature = "csv")]
         OutputFormat::Csv => format_csv_to_string(response),
+        #[cfg(not(feature = "csv"))]
+        OutputFormat::Csv => {
+            anyhow::bail!("CSV output is not available. Install with: cargo install seekit -F csv")
+        }
         OutputFormat::Markdown => Ok(format_markdown_to_string(response)),
         OutputFormat::Raw | OutputFormat::Terminal => {
             let mut s = String::new();
@@ -351,6 +362,7 @@ fn format_response_to_string(
 }
 
 /// 格式化为 CSV 字符串
+#[cfg(feature = "csv")]
 fn format_csv_to_string(response: &SearchResponse) -> anyhow::Result<String> {
     let mut buf = Vec::new();
     {

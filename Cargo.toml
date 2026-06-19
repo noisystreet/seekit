@@ -10,13 +10,18 @@ homepage = "https://github.com/noisystreet/seekit"
 keywords = ["search", "cli", "duckduckgo", "searxng", "search-engine"]
 categories = ["command-line-utilities"]
 
+[features]
+default = []
+repl = ["dep:rustyline"]
+csv = ["dep:csv"]
+
 [dependencies]
 # CLI argument parsing
 clap = { version = "4", features = ["derive"] }
 clap_complete = "4"
 
 # Async HTTP client
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "http2"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 
 # HTML parsing (search result extraction + page content)
 scraper = "0.21"
@@ -50,11 +55,11 @@ hex = "0.4"
 # Async trait
 async-trait = "0.1"
 
-# REPL interactive mode
-rustyline = "14"
+# REPL interactive mode (optional, enabled via "repl" feature)
+rustyline = { version = "14", optional = true }
 
-# CSV output
-csv = "1"
+# CSV output (optional, enabled via "csv" feature)
+csv = { version = "1", optional = true }
 
 [profile.release]
 strip = true
