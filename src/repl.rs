@@ -34,6 +34,7 @@ impl Validator for ReplHelper {}
 impl Helper for ReplHelper {}
 
 /// REPL 命令
+#[derive(Debug)]
 enum ReplCommand {
     /// 执行搜索
     Search(String),
@@ -167,6 +168,278 @@ async fn do_search(state: &mut ReplState, query: &str, page: u32) -> anyhow::Res
     Ok(())
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::Parser;
+
+    // ── ReplState ─────────────────────────────────────────
+
+    #[test]
+    fn test_repl_state_new() {
+        let cli = Cli::parse_from(&["seekit", "-i"]);
+        let state = ReplState::new(cli);
+        assert!(state.results.is_empty());
+        assert_eq!(state.page, 1);
+        assert!(state.last_query.is_empty());
+    }
+
+    // ── parse_command ─────────────────────────────────────
+
+    #[test]
+    fn test_parse_command_search_query() {
+        match parse_command("rust programming") {
+            ReplCommand::Search(q) => assert_eq!(q, "rust programming"),
+            _ => panic!("expected Search"),
+        }
+    }
+
+    #[test]
+    fn test_parse_command_search_with_special_chars() {
+        match parse_command("C++ tutorial 2024") {
+            ReplCommand::Search(q) => assert_eq!(q, "C++ tutorial 2024"),
+            _ => panic!("expected Search"),
+        }
+    }
+
+    #[test]
+    fn test_parse_command_quit() {
+        for cmd in &["q", "quit", "exit"] {
+            assert!(
+                matches!(parse_command(cmd), ReplCommand::Quit),
+                "failed for {cmd}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_parse_command_help() {
+        for cmd in &["h", "help", "?"] {
+            assert!(
+                matches!(parse_command(cmd), ReplCommand::Help),
+                "failed for {cmd}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_parse_command_next_page() {
+        for cmd in &["n", "next"] {
+            assert!(
+                matches!(parse_command(cmd), ReplCommand::NextPage),
+                "failed for {cmd}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_parse_command_prev_page() {
+        for cmd in &["p", "prev"] {
+            assert!(
+                matches!(parse_command(cmd), ReplCommand::PrevPage),
+                "failed for {cmd}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_parse_command_open() {
+        for (input, expected) in &[
+            ("o 1", 1usize),
+            ("o 42", 42),
+            ("open 3", 3),
+            ("open 99", 99),
+        ] {
+            match parse_command(input) {
+                ReplCommand::Open(n) => assert_eq!(n, *expected, "failed for {input}"),
+                _ => panic!("expected Open for {input}"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_parse_command_fetch() {
+        for (input, expected) in &[
+            ("f 1", 1usize),
+            ("f 10", 10),
+            ("fetch 3", 3),
+            ("fetch 100", 100),
+        ] {
+            match parse_command(input) {
+                ReplCommand::Fetch(n) => assert_eq!(n, *expected, "failed for {input}"),
+                _ => panic!("expected Fetch for {input}"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_parse_command_trailing_spaces() {
+        match parse_command("  hello world  ") {
+            ReplCommand::Search(q) => assert_eq!(q, "hello world"),
+            _ => panic!("expected Search"),
+        }
+    }
+
+    #[test]
+    fn test_parse_command_open_no_number_is_search() {
+        match parse_command("o") {
+            ReplCommand::Search(q) => assert_eq!(q, "o"),
+            other => panic!("expected Search(\"o\"), got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_parse_command_empty_input() {
+        match parse_command("") {
+            ReplCommand::Search(q) => assert!(q.is_empty()),
+            _ => panic!("expected Search for empty input"),
+        }
+    }
+
+    #[test]
+    fn test_parse_command_whitespace() {
+        match parse_command("  ") {
+            ReplCommand::Search(q) => assert!(q.is_empty()),
+            _ => panic!("expected Search for whitespace"),
+        }
+    }
+
+    // ── is_quit ────────────────────────────────────────────
+
+    #[test]
+    fn test_is_quit_true() {
+        assert!(is_quit("q"));
+        assert!(is_quit("quit"));
+        assert!(is_quit("exit"));
+    }
+
+    #[test]
+    fn test_is_quit_false() {
+        assert!(!is_quit("query"));
+        assert!(!is_quit(""));
+    }
+
+    // ── is_help ────────────────────────────────────────────
+
+    #[test]
+    fn test_is_help_true() {
+        assert!(is_help("h"));
+        assert!(is_help("help"));
+        assert!(is_help("?"));
+    }
+
+    // ── try_page_cmd ───────────────────────────────────────
+
+    #[test]
+    fn test_try_page_cmd_next() {
+        assert!(matches!(try_page_cmd("n"), Some(ReplCommand::NextPage)));
+        assert!(matches!(try_page_cmd("next"), Some(ReplCommand::NextPage)));
+    }
+
+    #[test]
+    fn test_try_page_cmd_prev() {
+        assert!(matches!(try_page_cmd("p"), Some(ReplCommand::PrevPage)));
+        assert!(matches!(try_page_cmd("prev"), Some(ReplCommand::PrevPage)));
+    }
+
+    #[test]
+    fn test_try_page_cmd_other() {
+        assert!(try_page_cmd("hello").is_none());
+        assert!(try_page_cmd("").is_none());
+    }
+
+    // ── try_number_cmd ─────────────────────────────────────
+
+    #[test]
+    fn test_try_number_cmd_valid() {
+        assert_eq!(try_number_cmd("o 5", &["o ", "open "]), Some(5));
+        assert_eq!(try_number_cmd("f 10", &["f ", "fetch "]), Some(10));
+        assert_eq!(try_number_cmd("open 42", &["o ", "open "]), Some(42));
+    }
+
+    #[test]
+    fn test_try_number_cmd_invalid() {
+        assert!(try_number_cmd("o abc", &["o ", "open "]).is_none());
+        assert!(try_number_cmd("hello", &["o ", "open "]).is_none());
+    }
+
+    // ── validate_index ─────────────────────────────────────
+
+    #[test]
+    fn test_validate_index_valid() {
+        assert!(validate_index(1, 5));
+        assert!(validate_index(5, 5));
+    }
+
+    #[test]
+    fn test_validate_index_zero() {
+        assert!(!validate_index(0, 5));
+    }
+
+    #[test]
+    fn test_validate_index_out_of_range() {
+        assert!(!validate_index(6, 5));
+    }
+
+    #[test]
+    fn test_validate_index_empty_results() {
+        assert!(!validate_index(1, 0));
+    }
+
+    // ── handle_page_cmd ────────────────────────────────────
+
+    #[test]
+    fn test_handle_page_cmd_next_no_query() {
+        let cli = Cli::parse_from(&["seekit"]);
+        let state = ReplState::new(cli);
+        let result = handle_page_cmd(&state, PageDirection::Next);
+        assert!(result.unwrap().is_none());
+    }
+
+    #[test]
+    fn test_handle_page_cmd_next_with_query() {
+        let cli = Cli::parse_from(&["seekit"]);
+        let mut state = ReplState::new(cli);
+        state.last_query = "rust".to_string();
+        state.page = 1;
+        let result = handle_page_cmd(&state, PageDirection::Next).unwrap();
+        assert_eq!(result, Some(("rust".to_string(), 2)));
+    }
+
+    #[test]
+    fn test_handle_page_cmd_prev_on_first_page() {
+        let cli = Cli::parse_from(&["seekit"]);
+        let state = ReplState::new(cli);
+        let result = handle_page_cmd(&state, PageDirection::Prev);
+        assert!(result.unwrap().is_none());
+    }
+
+    #[test]
+    fn test_handle_page_cmd_prev_with_query() {
+        let cli = Cli::parse_from(&["seekit"]);
+        let mut state = ReplState::new(cli);
+        state.last_query = "rust".to_string();
+        state.page = 3;
+        let result = handle_page_cmd(&state, PageDirection::Prev).unwrap();
+        assert_eq!(result, Some(("rust".to_string(), 2)));
+    }
+
+    // ── print_help ─────────────────────────────────────────
+
+    #[test]
+    fn test_print_help_does_not_panic() {
+        print_help();
+    }
+
+    // ── open_in_browser ────────────────────────────────────
+
+    #[test]
+    fn test_open_in_browser_invalid_url() {
+        // 只测试不 panic
+        open_in_browser("https://example.com");
+    }
+}
+
 /// 创建搜索引擎（REPL 版本，不带缓存）
 fn create_repl_engine(cli: &Cli) -> anyhow::Result<Box<dyn SearchEngine>> {
     let engine_type: EngineType = cli
@@ -175,20 +448,20 @@ fn create_repl_engine(cli: &Cli) -> anyhow::Result<Box<dyn SearchEngine>> {
         .map_err(|e: String| anyhow::anyhow!("{}", e))?;
 
     match engine_type {
-        EngineType::DuckDuckGo => Ok(Box::new(engine::duckduckgo::DuckDuckGo::new()?)),
+        EngineType::DuckDuckGo => Ok(Box::new(engine::duckduckgo::DuckDuckGo::new(None)?)),
         EngineType::SearXNG => {
             let base_url = cli
                 .searxng_url
                 .clone()
                 .unwrap_or_else(|| "http://localhost:8080".to_string());
-            Ok(Box::new(engine::searxng::SearXNG::new(&base_url)?))
+            Ok(Box::new(engine::searxng::SearXNG::new(&base_url, None)?))
         }
         EngineType::Auto => {
             let base_url = cli
                 .searxng_url
                 .clone()
                 .unwrap_or_else(|| "http://localhost:8080".to_string());
-            Ok(Box::new(engine::fusion::AutoEngine::new(&base_url)?))
+            Ok(Box::new(engine::fusion::AutoEngine::new(&base_url, None)?))
         }
     }
 }
@@ -250,7 +523,11 @@ fn open_in_browser(url: &str) {
             .args(["/c", "start", url])
             .status()
     } else {
-        Err(std::io::Error::other("unsupported OS"))
+        #[allow(clippy::io_other_error)]
+        Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "unsupported OS",
+        ))
     };
 
     match result {
