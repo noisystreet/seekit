@@ -60,6 +60,7 @@ seekit -e ddg "query"           # 快捷别名
 - 降低请求频率，间隔几秒再试
 - 使用 `--no-safe` 可能减少检测概率
 - 换用 SearXNG 引擎
+- 配置代理：`seekit --proxy http://127.0.0.1:7890 "query"`
 
 ### SearXNG（自部署）
 
@@ -91,6 +92,8 @@ services:
 mkdir -p searxng
 docker compose up -d
 ```
+
+默认的 `deploy/searxng/settings.yml` 启用了 Google、Bing、DuckDuckGo、Brave、百度、搜狗等搜索引擎。SearXNG 的出站代理配置参见[代理与网络](#代理与网络)章节。
 
 #### 使用
 
@@ -214,6 +217,46 @@ seekit --mcp
 | `search` | 通过 DuckDuckGo、SearXNG 或 auto 模式搜索网页 |
 | `fetch` | 获取 URL 内容并转换为 Markdown |
 
+### 工具参数
+
+#### `search` 参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `query` | string | — | 搜索关键词（必填） |
+| `engine` | string | `duckduckgo` | 引擎: `duckduckgo`, `searxng`, `auto` |
+| `max_results` | integer | `10` | 最大结果数 |
+| `page` | integer | `1` | 页码 |
+| `lang` | string | `en` | 搜索语言（仅 SearXNG） |
+| `searxng_url` | string | — | SearXNG 实例地址 |
+| `proxy` | string | — | HTTP 代理地址（如 `http://127.0.0.1:7890`） |
+
+#### `fetch` 参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `url` | string | — | 要获取的 URL（必填） |
+| `max_content_length` | integer | `5000` | 内容最大字符数 |
+| `proxy` | string | — | HTTP 代理地址 |
+
+### Trae IDE 配置
+
+在项目根目录创建 `.trae/mcp.json`：
+
+```json
+{
+  "mcpServers": {
+    "seekit": {
+      "command": "/path/to/seekit",
+      "args": ["--mcp"],
+      "env": {}
+    }
+  }
+}
+```
+
+然后在 **设置 > MCP** 中打开 **启用项目级 MCP** 开关。
+
 ### Claude Desktop 配置
 
 添加到 `claude_desktop_config.json`：
@@ -234,6 +277,41 @@ seekit --mcp
 ```bash
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/call",
   "params":{"name":"search","arguments":{"query":"rust"}}}' | seekit --mcp
+```
+
+## 代理与网络
+
+当 DuckDuckGo 或 SearXNG 无法直接访问外部网络时，需要配置代理。
+
+### 通过 CLI 参数（`--proxy`）
+
+```bash
+seekit --proxy http://127.0.0.1:7890 "query"
+```
+
+### 通过环境变量
+
+| 变量 | 说明 | 示例 |
+|------|------|------|
+| `HTTPS_PROXY` / `https_proxy` | HTTPS 代理 | `http://localhost:8118` |
+| `HTTP_PROXY` / `http_proxy` | HTTP 代理 | `http://localhost:8118` |
+| `ALL_PROXY` / `all_proxy` | 备用代理 | `http://localhost:8118` |
+
+优先级：`--proxy` 命令行参数 > `HTTPS_PROXY` > `http_proxy` > `ALL_PROXY`。
+
+```bash
+HTTPS_PROXY=http://localhost:8118 seekit "query"
+```
+
+### SearXNG 出站代理
+
+自部署 SearXNG 需要在 `settings.yml` 中配置出站代理：
+
+```yaml
+outgoing:
+  proxies:
+    http: http://localhost:8118
+    https: http://localhost:8118
 ```
 
 ---
@@ -260,21 +338,6 @@ cache_ttl_secs = 300
 
 ---
 
-## 环境变量
-
-| 变量 | 说明 | 示例 |
-|------|------|------|
-| `RUST_LOG` | 日志级别 | `seekit=debug`, `seekit=warn` |
-| `http_proxy` | HTTP 代理 | `http://localhost:8118` |
-| `https_proxy` | HTTPS 代理 | `http://localhost:8118` |
-
-```bash
-RUST_LOG=seekit=debug seekit "query"
-https_proxy=http://localhost:8118 seekit "query"
-```
-
----
-
 ## 完整参数列表
 
 ```
@@ -284,17 +347,24 @@ Arguments:
   [QUERY]             搜索关键词（--clear-cache 或 --init-config 时可选）
 
 Options:
-  -e, --engine <ENGINE>            搜索引擎: duckduckgo, searxng [default: duckduckgo]
+  -e, --engine <ENGINE>            搜索引擎: duckduckgo, searxng, auto [default: duckduckgo]
       --searxng-url <SEARXNG_URL>  SearXNG 实例地址（--engine searxng 时使用）
+      --proxy <PROXY>              HTTP 代理地址（如 http://127.0.0.1:7890）
       --lang <LANG>                搜索语言（如 en, zh, ja），仅 SearXNG 引擎生效 [default: en]
   -f, --format <FORMAT>            输出格式: terminal, json, raw [default: terminal]
   -n, --max-results <MAX_RESULTS>  最大结果数 [default: 10]
+  -p, --page <PAGE>                页码 [default: 1]
   -t, --timeout <TIMEOUT>          请求超时（秒）[default: 10]
+  -F, --fetch                      获取页面内容（HTML 转 Markdown）
+      --max-content-length <LEN>   每页最大字符数 [default: 5000]
       --cache-ttl <CACHE_TTL>      缓存 TTL（秒）[default: 300]
       --no-safe                    禁用安全搜索
       --no-cache                   跳过缓存
       --clear-cache                清空缓存
       --init-config                生成默认配置文件
+  -o, --output <FILE>              输出文件（从扩展名自动识别格式）
+      --completion <SHELL>         生成 Shell 自动补全脚本
+      --mcp                        启动 MCP stdio 服务
   -h, --help                       Print help
   -V, --version                    Print version
 ```

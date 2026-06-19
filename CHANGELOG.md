@@ -5,7 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.1] - 2026-06-18
+## [0.2.0] - 2026-06-19
+
+### Added
+
+- `--proxy` CLI flag: explicit HTTP proxy configuration (overrides env vars)
+- Proxy support for DuckDuckGo, SearXNG, Auto engines, and Fetcher
+- MCP tools (`search`, `fetch`) now accept `proxy` parameter
+- `client_builder_with_proxy()` helper in `engine/mod.rs`
+- Project-level MCP configuration: `.trae/mcp.json` for Trae IDE
+- Baidu and Sogou search engines in SearXNG default config
+
+### Changed
+
+- `client_builder_with_proxy` signature: takes explicit `proxy_url: Option<&str>`
+- SearXNG default settings: removed outbound proxy config, added Baidu/Sogou
+- Manual (EN/CN): reorganized proxy docs, added MCP tool parameters, Trae IDE config
 
 ### Fixed
 

@@ -14,7 +14,7 @@ src/
 ├── lib.rs             # Public API
 ├── cli.rs             # clap argument parsing
 ├── engine/
-│   ├── mod.rs         # EngineType enum
+│   ├── mod.rs         # EngineType enum, client_builder_with_proxy()
 │   ├── trait.rs       # SearchEngine trait
 │   ├── duckduckgo.rs  # DuckDuckGo implementation
 │   ├── searxng.rs     # SearXNG implementation
@@ -23,7 +23,11 @@ src/
 ├── cache.rs           # Disk cache
 ├── fetcher.rs         # Page content fetcher (HTML → Markdown)
 ├── output.rs          # Terminal/JSON/Raw output
-└── error.rs           # Error types
+├── error.rs           # Error types
+└── mcp.rs             # MCP stdio server
+
+.trae/
+└── mcp.json           # Trae IDE project-level MCP configuration
 
 tests/
 └── integration_test.rs   # Integration tests
@@ -31,6 +35,7 @@ tests/
 docs/
 ├── MANUAL.md          # English user manual
 ├── MANUAL.zh.md       # Chinese user manual
+├── CHANGELOG.md       # Changelog
 └── adr/
     └── DESIGN.md      # Architecture design document (Chinese)
 

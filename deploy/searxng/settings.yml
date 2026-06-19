@@ -23,7 +23,7 @@ outgoing:
   proxies:
     http: http://localhost:8118
     https: http://localhost:8118
-  no_proxy: localhost,127.0.0.1
+  no_proxy: localhost,127.0.0.1,*.baidu.com,*.sogou.com,*.qq.com,*.163.com,cn
 
 ui:
   static_use_hash: true
@@ -85,6 +85,16 @@ engines:
     disabled: false
 
   # Engines disabled by default — enable as needed
+  - name: baidu
+    engine: baidu
+    shortcut: bd
+    disabled: false
+
+  - name: sogou
+    engine: sogou
+    shortcut: sg
+    disabled: false
+
   - name: yahoo
     disabled: true
 

@@ -107,10 +107,10 @@ pub struct AutoEngine {
 
 impl AutoEngine {
     /// 创建 Auto 引擎
-    pub fn new(searxng_base_url: &str) -> Result<Self> {
+    pub fn new(searxng_base_url: &str, proxy_url: Option<&str>) -> Result<Self> {
         Ok(Self {
-            duckduckgo: Arc::new(DuckDuckGo::new()?),
-            searxng: Arc::new(SearXNG::new(searxng_base_url)?),
+            duckduckgo: Arc::new(DuckDuckGo::new(proxy_url)?),
+            searxng: Arc::new(SearXNG::new(searxng_base_url, proxy_url)?),
         })
     }
 }

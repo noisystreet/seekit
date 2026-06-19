@@ -36,9 +36,9 @@ impl SearXNG {
     /// 创建 SearXNG 引擎
     ///
     /// `base_url`: SearXNG 实例地址，如 `http://localhost:8080`
-    pub fn new(base_url: &str) -> Result<Self> {
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(30))
+    /// `proxy_url`: HTTP 代理地址（可选）
+    pub fn new(base_url: &str, proxy_url: Option<&str>) -> Result<Self> {
+        let client = super::client_builder_with_proxy(proxy_url, 30)
             .build()
             .map_err(SearchError::Http)?;
 
@@ -173,7 +173,7 @@ mod tests {
 
     #[test]
     fn test_build_url_default() {
-        let engine = SearXNG::new("http://localhost:8080").unwrap();
+        let engine = SearXNG::new("http://localhost:8080", None).unwrap();
         let config = EngineConfig {
             lang: Some("en".to_string()),
             ..Default::default()
@@ -187,7 +187,7 @@ mod tests {
 
     #[test]
     fn test_build_url_no_safe_search() {
-        let engine = SearXNG::new("http://localhost:8080").unwrap();
+        let engine = SearXNG::new("http://localhost:8080", None).unwrap();
         let config = EngineConfig {
             safe_search: false,
             ..Default::default()
@@ -198,7 +198,7 @@ mod tests {
 
     #[test]
     fn test_build_url_with_lang() {
-        let engine = SearXNG::new("http://localhost:8080").unwrap();
+        let engine = SearXNG::new("http://localhost:8080", None).unwrap();
         let config = EngineConfig {
             lang: Some("zh".to_string()),
             ..Default::default()
@@ -209,7 +209,7 @@ mod tests {
 
     #[test]
     fn test_build_url_without_lang() {
-        let engine = SearXNG::new("http://localhost:8080").unwrap();
+        let engine = SearXNG::new("http://localhost:8080", None).unwrap();
         let config = EngineConfig {
             lang: None,
             ..Default::default()
@@ -220,7 +220,7 @@ mod tests {
 
     #[test]
     fn test_build_url_base_url_slash_stripped() {
-        let engine = SearXNG::new("http://localhost:8080/").unwrap();
+        let engine = SearXNG::new("http://localhost:8080/", None).unwrap();
         let config = EngineConfig {
             lang: Some("en".to_string()),
             ..Default::default()
@@ -234,7 +234,7 @@ mod tests {
 
     #[test]
     fn test_build_url_query_encoding() {
-        let engine = SearXNG::new("http://localhost:8080").unwrap();
+        let engine = SearXNG::new("http://localhost:8080", None).unwrap();
         let config = EngineConfig::default();
         let url = engine.build_url("hello world", &config);
         assert!(url.contains("q=hello+world") || url.contains("q=hello%20world"));

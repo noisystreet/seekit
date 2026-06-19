@@ -79,7 +79,7 @@ fn server_info() -> serde_json::Value {
 fn tool_search_schema() -> serde_json::Value {
     serde_json::json!({
         "name": "search",
-        "description": "Search the web using DuckDuckGo, SearXNG, or multi-engine auto mode. Returns title, URL, and snippet for each result.",
+        "description": "Search the web using DuckDuckGo, SearXNG, or multi-engine auto mode. Returns title, URL, snippet, and optionally full page content.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -108,6 +108,15 @@ fn tool_search_schema() -> serde_json::Value {
                 "searxng_url": {
                     "type": "string",
                     "description": "SearXNG instance URL (required when engine=searxng or auto)"
+                },
+                "proxy": {
+                    "type": "string",
+                    "description": "HTTP proxy URL (e.g. http://127.0.0.1:7890)"
+                },
+                "fetch_content": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Fetch full page content for each result (slower but includes article text)"
                 }
             },
             "required": ["query"]
@@ -131,6 +140,10 @@ fn tool_fetch_schema() -> serde_json::Value {
                     "type": "integer",
                     "default": 5000,
                     "description": "Maximum characters of content to return"
+                },
+                "proxy": {
+                    "type": "string",
+                    "description": "HTTP proxy URL (e.g. http://127.0.0.1:7890)"
                 }
             },
             "required": ["url"]
@@ -166,6 +179,11 @@ async fn handle_search_call(
     let page = arg_u64(args, "page").max(1) as u32;
     let lang = arg_str(args, "lang").unwrap_or("en");
     let searxng_url = arg_str(args, "searxng_url");
+    let proxy = arg_str(args, "proxy");
+    let fetch_content = args
+        .get("fetch_content")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
 
     let mut cli_args = vec![
         "seekit".to_string(),
@@ -185,6 +203,14 @@ async fn handle_search_call(
         cli_args.push("--searxng-url".to_string());
         cli_args.push(url.to_string());
     }
+    if let Some(p) = proxy {
+        cli_args.push("--proxy".to_string());
+        cli_args.push(p.to_string());
+    }
+    if fetch_content {
+        cli_args.push("--fetch".to_string());
+        cli_args.push("--no-cache".to_string());
+    }
 
     let cli = <Cli as clap::Parser>::parse_from(&cli_args);
     let response = search(&cli)
@@ -195,7 +221,17 @@ async fn handle_search_call(
         .results
         .iter()
         .enumerate()
-        .map(|(i, r)| format!("{}. [{}]({})\n   {}", i + 1, r.title, r.url, r.snippet))
+        .map(|(i, r)| {
+            let base = format!("{}. [{}]({})\n   {}", i + 1, r.title, r.url, r.snippet);
+            if let Some(ref content) = r.content {
+                if !content.is_empty() {
+                    // 截取内容前 300 字作为预览
+                    let preview = content.chars().take(300).collect::<String>();
+                    return format!("{}\n   > {}", base, preview.replace('\n', "\n   > "));
+                }
+            }
+            base
+        })
         .collect::<Vec<_>>()
         .join("\n\n");
 
@@ -223,9 +259,11 @@ async fn handle_fetch_call(
     let url = arg_str(args, "url")
         .ok_or_else(|| (-32602, "Missing required argument: url".to_string()))?;
     let max_content_length = arg_u64(args, "max_content_length").max(1) as usize;
+    let proxy = arg_str(args, "proxy");
 
     let fetcher_config = fetcher::FetcherConfig {
         max_content_length,
+        proxy_url: proxy.map(|s| s.to_string()),
         ..Default::default()
     };
     let fetcher = fetcher::Fetcher::new(fetcher_config).map_err(|e| (-32603, e.to_string()))?;
