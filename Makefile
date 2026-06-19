@@ -18,7 +18,7 @@ test-all:
 	cargo test -- --include-ignored
 
 coverage:
-	cargo llvm-cov --html
+	cargo tarpaulin --out Html --output-dir coverage && echo "Coverage report: file://$(PWD)/coverage/tarpaulin-report.html"
 
 # Lint
 lint:
@@ -62,6 +62,17 @@ precommit-run:
 # 运行
 run:
 	cargo run -- $(ARGS)
+
+# 安装
+install: release
+	@echo "Installing seekit to /usr/local/bin..."
+	cp target/release/seekit /usr/local/bin/
+	@echo "✓ Installed. Run: seekit \"your query\""
+
+install-home:
+	@echo "Installing seekit to ~/.cargo/bin..."
+	cargo install --path .
+	@echo "✓ Installed. Run: seekit \"your query\""
 
 # 安装
 install: release

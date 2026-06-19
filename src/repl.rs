@@ -449,6 +449,8 @@ fn create_repl_engine(cli: &Cli) -> anyhow::Result<Box<dyn SearchEngine>> {
 
     match engine_type {
         EngineType::DuckDuckGo => Ok(Box::new(engine::duckduckgo::DuckDuckGo::new(None)?)),
+        EngineType::Google => Ok(Box::new(engine::google::Google::new(None)?)),
+        EngineType::Bing => Ok(Box::new(engine::bing::Bing::new(None)?)),
         EngineType::SearXNG => {
             let base_url = cli
                 .searxng_url
