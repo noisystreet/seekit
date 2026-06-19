@@ -34,6 +34,7 @@ pub mod error;
 pub mod fetcher;
 pub mod mcp;
 pub mod output;
+pub mod repl;
 
 use std::io::Write;
 use std::time::Instant;
@@ -216,6 +217,11 @@ pub async fn run() -> anyhow::Result<()> {
     }
     if cli.mcp {
         return mcp::run_mcp_server().await;
+    }
+
+    // REPL 交互模式
+    if cli.repl {
+        return repl::run_repl(cli).await;
     }
 
     // 验证并准备搜索参数

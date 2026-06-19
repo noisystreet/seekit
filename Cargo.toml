@@ -50,6 +50,9 @@ hex = "0.4"
 # Async trait
 async-trait = "0.1"
 
+# REPL interactive mode
+rustyline = "14"
+
 # CSV output
 csv = "1"
 

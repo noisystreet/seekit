@@ -87,4 +87,8 @@ pub struct Cli {
     /// Start MCP stdio server for AI Agent integration
     #[arg(long)]
     pub mcp: bool,
+
+    /// Interactive REPL mode
+    #[arg(short = 'i', long)]
+    pub repl: bool,
 }
