@@ -13,7 +13,7 @@ class Seekit < Formula
   desc "CLI web search tool using DuckDuckGo and SearXNG"
   homepage "https://github.com/noisystreet/seekit"
   license "MIT"
-  version "0.1.1"
+  version "0.1.2"
 
   if OS.mac? && Hardware::CPU.arm?
     url "https://github.com/noisystreet/seekit/releases/latest/download/seekit-aarch64-apple-darwin.tar.gz"
