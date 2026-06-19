@@ -39,7 +39,12 @@ deploy/
 └── searxng/
     ├── settings.yml   # SearXNG config
     └── limiter.toml   # Rate limiter config
-```
+
+homebrew/
+└── Formula/
+    └── seekit.rb      # Homebrew formula
+
+install.sh               # One-command installer: curl | sh
 
 ## Hard Constraints
 

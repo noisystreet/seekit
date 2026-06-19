@@ -2,20 +2,41 @@
 
 ## 安装
 
-### 方式一：从源码构建
+### 快速安装（Linux / macOS）
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/noisystreet/seekit/main/install.sh | sh
+```
+
+自动检测系统架构，从 GitHub Releases 下载最新二进制并安装到 `/usr/local/bin`（或 `~/.local/bin`）。
+
+### Homebrew
+
+```bash
+brew install noisystreet/tap/seekit
+```
+
+### Cargo
+
+```bash
+cargo install seekit
+```
+
+### 从源码构建
 
 ```bash
 git clone <repo-url> && cd seekit
 make build
 ```
 
-构建产物位于 `target/debug/seekit`。也可直接运行：
+构建产物位于 `target/debug/seekit`。也可直接安装：
 
 ```bash
-cargo run -- <参数>...
+make install          # 复制到 /usr/local/bin
+make install-home     # 安装到 ~/.cargo/bin
 ```
 
-### 方式二：安装到 PATH
+或使用 cargo 安装：
 
 ```bash
 cargo install --path .

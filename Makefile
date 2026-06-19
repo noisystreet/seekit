@@ -63,6 +63,17 @@ precommit-run:
 run:
 	cargo run -- $(ARGS)
 
+# 安装
+install: release
+	@echo "Installing seekit to /usr/local/bin..."
+	cp target/release/seekit /usr/local/bin/
+	@echo "✓ Installed. Run: seekit \"your query\""
+
+install-home:
+	@echo "Installing seekit to ~/.cargo/bin..."
+	cargo install --path .
+	@echo "✓ Installed. Run: seekit \"your query\""
+
 # SearXNG 部署管理
 deploy-up:
 	@echo "Starting SearXNG..."
@@ -101,6 +112,10 @@ help:
 	@echo "  lint               Run clippy"
 	@echo "  format             Format code"
 	@echo "  format-check       Check formatting"
+	@echo ""
+	@echo "Install:"
+	@echo "  install            Build release and copy to /usr/local/bin"
+	@echo "  install-home       Install to ~/.cargo/bin (via cargo install)"
 	@echo ""
 	@echo "SearXNG Deployment:"
 	@echo "  deploy             Start SearXNG (same as deploy-up)"

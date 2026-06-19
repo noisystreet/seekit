@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.1] - 2026-06-18
 
+## [Unreleased]
+
+### Added
+
+- Release workflow: multi-platform builds (linux x86_64/aarch64, macOS x86_64/arm64) via GitHub Actions
+- `install.sh` — one-command installer: `curl -fsSL https://raw.githubusercontent.com/noisystreet/seekit/main/install.sh | sh`
+- Homebrew formula (`homebrew/Formula/seekit.rb`) for `brew install noisystreet/tap/seekit`
+- `make install` and `make install-home` targets for local builds
+- Installation docs in MANUAL (EN/CN)
+
+## [0.1.1] - 2026-06-18
+
 ### Fixed
 
 - Cross-compilation for aarch64-unknown-linux-gnu (switch to rustls-tls)

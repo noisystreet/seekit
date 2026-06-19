@@ -5,8 +5,9 @@ on:
     tags:
       - "v*.*.*"
 
-permissions:
-  contents: write
+env:
+  CARGO_TERM_COLOR: always
+  BINARY_NAME: seekit
 
 jobs:
   build:
@@ -17,12 +18,16 @@ jobs:
         include:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
+            suffix: ""
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
+            suffix: ""
           - target: x86_64-apple-darwin
             os: macos-latest
+            suffix: ""
           - target: aarch64-apple-darwin
             os: macos-latest
+            suffix: ""
 
     steps:
       - uses: actions/checkout@v7
@@ -33,54 +38,67 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: Install cross-compilation tools (aarch64-linux)
+      - name: Install cross-compilation dependencies (aarch64-linux)
         if: matrix.target == 'aarch64-unknown-linux-gnu'
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu
-          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
 
       - name: Build (release)
-        run: cargo build --release --locked --target ${{ matrix.target }}
+        run: cargo build --locked --release --target ${{ matrix.target }}
 
-      - name: Upload binary
+      - name: Package binary
+        shell: bash
+        run: |
+          cd target/${{ matrix.target }}/release
+          tar czf ../../../$BINARY_NAME-${{ matrix.target }}.tar.gz $BINARY_NAME${{ matrix.suffix }}
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: seekit-${{ github.ref_name }}-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/seekit${{ runner.os == 'Windows' && '.exe' || '' }}
+          name: ${{ matrix.target }}
+          path: $BINARY_NAME-${{ matrix.target }}.tar.gz
 
-  release:
-    name: Create GitHub Release
+  create-release:
+    name: Create Release
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7
 
-      - name: Download all artifacts
-        uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@v4
         with:
           path: artifacts
 
-      - name: Generate release notes
+      - name: Generate release body
         run: |
-          sed -n '/^## \[/,/^## \[/p' CHANGELOG.md | head -n -2 > release_notes.md
+          cat > release-body.md << 'EOF'
+          ## Installation
+
+          ### Quick install (Linux / macOS)
+          ```bash
+          curl -fsSL https://raw.githubusercontent.com/noisystreet/seekit/main/install.sh | sh
+          ```
+
+          ### Homebrew
+          ```bash
+          brew install noisystreet/tap/seekit
+          ```
+
+          ### Cargo
+          ```bash
+          cargo install seekit
+          ```
+
+          ### Manual
+          Download the archive for your platform below, extract and place `seekit` in your `PATH`.
+          EOF
 
       - name: Create Release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@v2
         with:
-          body_path: release_notes.md
-          files: artifacts/**/*
-          generate_release_notes: false
-
-  publish:
-    name: Publish to crates.io
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-
-      - name: Publish
-        run: cargo publish --locked
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          body_path: release-body.md
+          files: artifacts/**/*.tar.gz
+          generate_release_notes: true
