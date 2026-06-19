@@ -2,13 +2,12 @@ use clap::Parser;
 
 /// seekit — A CLI web search tool
 ///
-/// Supports DuckDuckGo, SearXNG, and auto (multi-engine fusion) modes.
+/// Supports DuckDuckGo, Google, Bing, Brave, SearXNG, and auto (multi-engine fusion) modes.
 /// DuckDuckGo is the default engine (zero config).
-/// Use --engine searxng to switch to a self-hosted SearXNG instance.
-/// Use --engine auto to query all available engines in parallel.
 ///
-/// Output formats: terminal (default), json, raw, csv, markdown.
-/// Use --output to write results to a file (format auto-detected from extension).
+/// Optional features (cargo install seekit -F <feature>):
+///   repl  Interactive REPL mode (--repl / -i)
+///   csv   CSV output format (--format csv)
 #[derive(Parser, Debug)]
 #[command(name = "seekit")]
 #[command(version, about)]
@@ -88,7 +87,7 @@ pub struct Cli {
     #[arg(long)]
     pub mcp: bool,
 
-    /// Interactive REPL mode
+    /// Interactive REPL mode (requires `repl` feature)
     #[arg(short = 'i', long)]
     pub repl: bool,
 }

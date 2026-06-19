@@ -53,7 +53,12 @@ pub fn print_response(response: &SearchResponse, format: OutputFormat) -> anyhow
         OutputFormat::Terminal => print_terminal(response),
         OutputFormat::Json => print_json(response)?,
         OutputFormat::Raw => print_raw(response),
+        #[cfg(feature = "csv")]
         OutputFormat::Csv => print_csv(response)?,
+        #[cfg(not(feature = "csv"))]
+        OutputFormat::Csv => {
+            anyhow::bail!("CSV output is not available. Install with: cargo install seekit -F csv")
+        }
         OutputFormat::Markdown => print_markdown(response),
     }
     Ok(())
@@ -130,6 +135,7 @@ fn print_raw(response: &SearchResponse) {
 }
 
 /// CSV 格式输出
+#[cfg(feature = "csv")]
 fn print_csv(response: &SearchResponse) -> anyhow::Result<()> {
     let mut wtr = csv::Writer::from_writer(std::io::stdout());
     // 写入标题行
