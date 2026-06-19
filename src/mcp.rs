@@ -311,6 +311,274 @@ async fn write_response<W: tokio::io::AsyncWriteExt + Unpin>(
     Ok(())
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_server_info_contains_protocol_and_name() {
+        let info = server_info();
+        assert_eq!(info["protocolVersion"], "2025-06-18");
+        assert_eq!(info["serverInfo"]["name"], "seekit");
+        assert!(info["capabilities"]["tools"].is_object());
+    }
+
+    #[test]
+    fn test_tool_search_schema_has_required_fields() {
+        let schema = tool_search_schema();
+        assert_eq!(schema["name"], "search");
+        assert!(schema["description"].as_str().unwrap().len() > 10);
+        assert_eq!(schema["inputSchema"]["required"][0], "query");
+        assert!(schema["inputSchema"]["properties"]["engine"].is_object());
+        assert!(schema["inputSchema"]["properties"]["max_results"].is_object());
+        assert!(schema["inputSchema"]["properties"]["page"].is_object());
+    }
+
+    #[test]
+    fn test_tool_fetch_schema_has_required_fields() {
+        let schema = tool_fetch_schema();
+        assert_eq!(schema["name"], "fetch");
+        assert!(schema["description"].as_str().unwrap().len() > 10);
+        assert_eq!(schema["inputSchema"]["required"][0], "url");
+        assert!(schema["inputSchema"]["properties"]["max_content_length"].is_object());
+    }
+
+    #[test]
+    fn test_handle_list_tools_returns_both_tools() {
+        let result = handle_list_tools();
+        let tools = result["tools"].as_array().unwrap();
+        assert_eq!(tools.len(), 2);
+        assert_eq!(tools[0]["name"], "search");
+        assert_eq!(tools[1]["name"], "fetch");
+    }
+
+    #[test]
+    fn test_dispatch_initialize() {
+        let req = JsonRpcRequest {
+            jsonrpc: "2.0".into(),
+            id: Some(serde_json::json!(1)),
+            method: "initialize".into(),
+            params: serde_json::json!({}),
+        };
+        let result = tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(dispatch_request(req));
+        assert!(result.is_ok());
+        let resp = result.unwrap();
+        assert_eq!(resp.id, Some(serde_json::json!(1)));
+        let res = resp.result.unwrap();
+        assert_eq!(res["protocolVersion"], "2025-06-18");
+    }
+
+    #[test]
+    fn test_dispatch_notifications_initialized() {
+        let req = JsonRpcRequest {
+            jsonrpc: "2.0".into(),
+            id: Some(serde_json::json!(1)),
+            method: "notifications/initialized".into(),
+            params: serde_json::json!({}),
+        };
+        let result = tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(dispatch_request(req));
+        assert!(result.is_err());
+        let (_, skip) = result.unwrap_err();
+        assert!(skip); // should be skipped (no response sent)
+    }
+
+    #[test]
+    fn test_dispatch_tools_list() {
+        let req = JsonRpcRequest {
+            jsonrpc: "2.0".into(),
+            id: Some(serde_json::json!(1)),
+            method: "tools/list".into(),
+            params: serde_json::json!({}),
+        };
+        let result = tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(dispatch_request(req));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_dispatch_unknown_method() {
+        let req = JsonRpcRequest {
+            jsonrpc: "2.0".into(),
+            id: Some(serde_json::json!(1)),
+            method: "unknown_method".into(),
+            params: serde_json::json!({}),
+        };
+        let result = tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(dispatch_request(req));
+        assert!(result.is_ok());
+        let resp = result.unwrap();
+        let err = resp.error.unwrap();
+        assert_eq!(err.code, -32601);
+        assert!(err.message.contains("unknown_method"));
+    }
+
+    #[test]
+    fn test_dispatch_tools_call_missing_name() {
+        let req = JsonRpcRequest {
+            jsonrpc: "2.0".into(),
+            id: Some(serde_json::json!(1)),
+            method: "tools/call".into(),
+            params: serde_json::json!({}),
+        };
+        let result = tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(dispatch_request(req));
+        assert!(result.is_ok());
+        let resp = result.unwrap();
+        let err = resp.error.unwrap();
+        assert_eq!(err.code, -32602);
+        assert!(err.message.contains("Missing tool name"));
+    }
+
+    #[test]
+    fn test_dispatch_tools_call_unknown_tool() {
+        let req = JsonRpcRequest {
+            jsonrpc: "2.0".into(),
+            id: Some(serde_json::json!(1)),
+            method: "tools/call".into(),
+            params: serde_json::json!({
+                "name": "nonexistent_tool",
+                "arguments": {}
+            }),
+        };
+        let result = tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(dispatch_request(req));
+        assert!(result.is_ok());
+        let resp = result.unwrap();
+        let err = resp.error.unwrap();
+        assert_eq!(err.code, -32601);
+        assert!(err.message.contains("nonexistent_tool"));
+    }
+
+    #[test]
+    fn test_json_rpc_response_success() {
+        let resp = JsonRpcResponse::success(
+            Some(serde_json::json!(1)),
+            serde_json::json!({"key": "value"}),
+        );
+        assert_eq!(resp.jsonrpc, "2.0");
+        assert_eq!(resp.id, Some(serde_json::json!(1)));
+        assert_eq!(resp.result.unwrap()["key"], "value");
+        assert!(resp.error.is_none());
+    }
+
+    #[test]
+    fn test_json_rpc_response_error() {
+        let resp = JsonRpcResponse::error(Some(serde_json::json!(1)), -32601, "test error".into());
+        assert_eq!(resp.jsonrpc, "2.0");
+        assert_eq!(resp.id, Some(serde_json::json!(1)));
+        assert!(resp.result.is_none());
+        let err = resp.error.unwrap();
+        assert_eq!(err.code, -32601);
+        assert_eq!(err.message, "test error");
+    }
+
+    #[test]
+    fn test_arg_str_exists() {
+        let mut map = serde_json::Map::new();
+        map.insert("key".into(), serde_json::json!("value"));
+        assert_eq!(arg_str(&map, "key"), Some("value"));
+    }
+
+    #[test]
+    fn test_arg_str_missing() {
+        let map = serde_json::Map::new();
+        assert_eq!(arg_str(&map, "missing"), None);
+    }
+
+    #[test]
+    fn test_arg_u64_exists() {
+        let mut map = serde_json::Map::new();
+        map.insert("num".into(), serde_json::json!(42));
+        assert_eq!(arg_u64(&map, "num"), 42);
+    }
+
+    #[test]
+    fn test_arg_u64_missing_defaults_zero() {
+        let map = serde_json::Map::new();
+        assert_eq!(arg_u64(&map, "missing"), 0);
+    }
+
+    #[tokio::test]
+    async fn test_write_response_writes_json_line() {
+        let resp = JsonRpcResponse::success(
+            Some(serde_json::json!(1)),
+            serde_json::json!({"key": "value"}),
+        );
+        let mut buf: Vec<u8> = Vec::new();
+        write_response(&mut buf, &resp).await.unwrap();
+        let output = String::from_utf8(buf).unwrap();
+        assert!(output.contains("\"jsonrpc\":\"2.0\""));
+        assert!(output.contains("\"id\":1"));
+        assert!(output.contains("\"key\":\"value\""));
+        assert!(output.ends_with('\n'));
+    }
+
+    #[tokio::test]
+    async fn test_process_line_valid_request() {
+        let mut buf: Vec<u8> = Vec::new();
+        let line = r#"{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}"#;
+        process_line(&mut buf, line).await.unwrap();
+        let output = String::from_utf8(buf).unwrap();
+        assert!(output.contains("\"jsonrpc\":\"2.0\""));
+        assert!(output.contains("\"tools\""));
+    }
+
+    #[tokio::test]
+    async fn test_process_line_invalid_json() {
+        let mut buf: Vec<u8> = Vec::new();
+        process_line(&mut buf, "not valid json").await.unwrap();
+        let output = String::from_utf8(buf).unwrap();
+        assert!(output.contains("\"code\":-32700"));
+    }
+
+    #[tokio::test]
+    async fn test_process_line_initialize() {
+        let mut buf: Vec<u8> = Vec::new();
+        let line = r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}"#;
+        process_line(&mut buf, line).await.unwrap();
+        let output = String::from_utf8(buf).unwrap();
+        assert!(output.contains("\"protocolVersion\""));
+        assert!(output.contains("\"seekit\""));
+    }
+
+    #[tokio::test]
+    async fn test_process_line_unknown_method() {
+        let mut buf: Vec<u8> = Vec::new();
+        let line = r#"{"jsonrpc":"2.0","id":1,"method":"bogus","params":{}}"#;
+        process_line(&mut buf, line).await.unwrap();
+        let output = String::from_utf8(buf).unwrap();
+        assert!(output.contains("\"code\":-32601"));
+        assert!(output.contains("bogus"));
+    }
+
+    #[tokio::test]
+    async fn test_process_line_tools_call_missing_name() {
+        let mut buf: Vec<u8> = Vec::new();
+        let line = r#"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{}}"#;
+        process_line(&mut buf, line).await.unwrap();
+        let output = String::from_utf8(buf).unwrap();
+        assert!(output.contains("\"code\":-32602"));
+    }
+
+    #[tokio::test]
+    async fn test_process_line_notifications_initialized_skips_response() {
+        let mut buf: Vec<u8> = Vec::new();
+        let line =
+            r#"{"jsonrpc":"2.0","id":null,"method":"notifications/initialized","params":{}}"#;
+        process_line(&mut buf, line).await.unwrap();
+        // Should produce no output (skip=true)
+        assert!(buf.is_empty());
+    }
+}
+
 /// 启动 MCP stdio server
 pub async fn run_mcp_server() -> anyhow::Result<()> {
     let stdin = tokio::io::stdin();

@@ -7,7 +7,7 @@ coverage:
     patch:
       default:
         target: auto
-        threshold: 100%
+        threshold: 30%
 
 ignore:
   - "**/*.md"
