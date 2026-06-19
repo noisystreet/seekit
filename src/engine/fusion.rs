@@ -3,6 +3,7 @@ use std::sync::Arc;
 use tracing::{debug, info, warn};
 
 use super::bing::Bing;
+use super::brave::Brave;
 use super::duckduckgo::DuckDuckGo;
 use super::google::Google;
 use super::r#trait::{EngineConfig, SearchEngine, SearchResult};
@@ -106,6 +107,7 @@ pub struct AutoEngine {
     duckduckgo: Arc<DuckDuckGo>,
     google: Arc<Google>,
     bing: Arc<Bing>,
+    brave: Arc<Brave>,
     searxng: Arc<SearXNG>,
 }
 
@@ -116,6 +118,7 @@ impl AutoEngine {
             duckduckgo: Arc::new(DuckDuckGo::new(proxy_url)?),
             google: Arc::new(Google::new(proxy_url)?),
             bing: Arc::new(Bing::new(proxy_url)?),
+            brave: Arc::new(Brave::new(proxy_url)?),
             searxng: Arc::new(SearXNG::new(searxng_base_url, proxy_url)?),
         })
     }
@@ -133,15 +136,18 @@ impl SearchEngine for AutoEngine {
         let ddg = self.duckduckgo.clone();
         let google = self.google.clone();
         let bing = self.bing.clone();
+        let brave = self.brave.clone();
         let searxng = self.searxng.clone();
         let query_owned = query.to_string();
         let config_ddg = config.clone();
         let config_google = config.clone();
         let config_bing = config.clone();
+        let config_brave = config.clone();
         let config_searxng = config.clone();
         let query_ddg = query_owned.clone();
         let query_google = query_owned.clone();
         let query_bing = query_owned.clone();
+        let query_brave = query_owned.clone();
 
         // 并行触发所有引擎
         let ddg_handle = tokio::spawn(async move {
@@ -159,6 +165,11 @@ impl SearchEngine for AutoEngine {
             (result, "bing")
         });
 
+        let brave_handle = tokio::spawn(async move {
+            let result = brave.search(&query_brave, &config_brave).await;
+            (result, "brave")
+        });
+
         let searxng_handle = tokio::spawn(async move {
             let result = searxng.search(&query_owned, &config_searxng).await;
             (result, "searxng")
@@ -167,7 +178,13 @@ impl SearchEngine for AutoEngine {
         // 收集结果，处理失败
         let mut engine_results: Vec<(&str, Vec<SearchResult>)> = Vec::new();
 
-        for handle in [ddg_handle, google_handle, bing_handle, searxng_handle] {
+        for handle in [
+            ddg_handle,
+            google_handle,
+            bing_handle,
+            brave_handle,
+            searxng_handle,
+        ] {
             match handle.await {
                 Ok((Ok(results), name)) => {
                     debug!("Auto: {} returned {} results", name, results.len());
