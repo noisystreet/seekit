@@ -22,6 +22,29 @@ brew install noisystreet/tap/seekit
 cargo install seekit
 ```
 
+<<<<<<<
+=======
+### 快速安装（Linux / macOS）
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/noisystreet/seekit/main/install.sh | sh
+```
+
+自动检测系统架构，从 GitHub Releases 下载最新二进制并安装到 `/usr/local/bin`（或 `~/.local/bin`）。
+
+### Homebrew
+
+```bash
+brew install noisystreet/tap/seekit
+```
+
+### Cargo
+
+```bash
+cargo install seekit
+```
+
+>>>>>>>
 ### 从源码构建
 
 ```bash

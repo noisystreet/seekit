@@ -32,6 +32,23 @@ repos:
         pass_filenames: false
         files: \.rs$
 
+      - id: cargo-test
+        name: cargo test
+        description: Run unit tests
+        entry: cargo test
+        language: system
+        pass_filenames: false
+        files: \.rs$
+
+      - id: cargo-coverage
+        name: cargo coverage
+        description: Check code coverage with tarpaulin (min 40%)
+        entry: bash -c 'cargo tarpaulin --out Xml --output-dir /tmp/tarpaulin-ci --skip-clean --engine llvm --fail-under 40 2>&1'
+        language: system
+        pass_filenames: false
+        files: \.rs$
+        stages: [manual, pre-commit]
+
       - id: lizard-complexity
         name: lizard complexity
         description: Check code complexity (max CCN=10, max length=120)

@@ -17,6 +17,8 @@ src/
 │   ├── mod.rs         # EngineType enum, client_builder_with_proxy()
 │   ├── trait.rs       # SearchEngine trait
 │   ├── duckduckgo.rs  # DuckDuckGo implementation
+│   ├── google.rs      # Google implementation
+│   ├── bing.rs        # Bing implementation
 │   ├── searxng.rs     # SearXNG implementation
 │   └── fusion.rs      # Multi-engine fusion (auto mode)
 ├── config.rs          # TOML configuration
@@ -44,6 +46,17 @@ deploy/
 └── searxng/
     ├── settings.yml   # SearXNG config
     └── limiter.toml   # Rate limiter config
+<<<<<<<
+=======
+
+homebrew/
+└── Formula/
+    └── seekit.rb      # Homebrew formula
+
+install.sh               # One-command installer: curl | sh
+
+## Hard Constraints
+>>>>>>>
 
 homebrew/
 └── Formula/

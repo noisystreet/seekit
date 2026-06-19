@@ -10,6 +10,7 @@
 .trae/
 *.swp
 *.swo
+*.swn
 *~
 
 # 环境文件
@@ -24,3 +25,5 @@ Thumbs.db
 
 # 日志文件
 *.log
+coverage/
+coverage_report/

@@ -3,6 +3,29 @@
 ## Installation
 
 ### Quick install (Linux / macOS)
+<<<<<<<
+=======
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/noisystreet/seekit/main/install.sh | sh
+```
+
+This automatically detects your OS and architecture, downloads the latest binary from GitHub Releases, and installs it to `/usr/local/bin` (or `~/.local/bin` as fallback).
+
+### Homebrew
+
+```bash
+brew install noisystreet/tap/seekit
+```
+
+### Cargo
+
+```bash
+cargo install seekit
+```
+
+### Build from source
+>>>>>>>
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/noisystreet/seekit/main/install.sh | sh

@@ -2,7 +2,9 @@ use std::sync::Arc;
 
 use tracing::{debug, info, warn};
 
+use super::bing::Bing;
 use super::duckduckgo::DuckDuckGo;
+use super::google::Google;
 use super::r#trait::{EngineConfig, SearchEngine, SearchResult};
 use super::searxng::SearXNG;
 use crate::error::{Result, SearchError};
@@ -102,6 +104,8 @@ fn normalize_url(url: &str) -> String {
 /// Auto 搜索引擎 — 并行查询所有引擎并融合结果
 pub struct AutoEngine {
     duckduckgo: Arc<DuckDuckGo>,
+    google: Arc<Google>,
+    bing: Arc<Bing>,
     searxng: Arc<SearXNG>,
 }
 
@@ -110,6 +114,8 @@ impl AutoEngine {
     pub fn new(searxng_base_url: &str, proxy_url: Option<&str>) -> Result<Self> {
         Ok(Self {
             duckduckgo: Arc::new(DuckDuckGo::new(proxy_url)?),
+            google: Arc::new(Google::new(proxy_url)?),
+            bing: Arc::new(Bing::new(proxy_url)?),
             searxng: Arc::new(SearXNG::new(searxng_base_url, proxy_url)?),
         })
     }
@@ -125,16 +131,32 @@ impl SearchEngine for AutoEngine {
         debug!("Auto engine: searching with all engines");
 
         let ddg = self.duckduckgo.clone();
+        let google = self.google.clone();
+        let bing = self.bing.clone();
         let searxng = self.searxng.clone();
         let query_owned = query.to_string();
         let config_ddg = config.clone();
+        let config_google = config.clone();
+        let config_bing = config.clone();
         let config_searxng = config.clone();
         let query_ddg = query_owned.clone();
+        let query_google = query_owned.clone();
+        let query_bing = query_owned.clone();
 
         // 并行触发所有引擎
         let ddg_handle = tokio::spawn(async move {
             let result = ddg.search(&query_ddg, &config_ddg).await;
             (result, "duckduckgo")
+        });
+
+        let google_handle = tokio::spawn(async move {
+            let result = google.search(&query_google, &config_google).await;
+            (result, "google")
+        });
+
+        let bing_handle = tokio::spawn(async move {
+            let result = bing.search(&query_bing, &config_bing).await;
+            (result, "bing")
         });
 
         let searxng_handle = tokio::spawn(async move {
@@ -145,31 +167,18 @@ impl SearchEngine for AutoEngine {
         // 收集结果，处理失败
         let mut engine_results: Vec<(&str, Vec<SearchResult>)> = Vec::new();
 
-        // DDG
-        match ddg_handle.await {
-            Ok((Ok(results), name)) => {
-                debug!("Auto: {} returned {} results", name, results.len());
-                engine_results.push((name, results));
-            }
-            Ok((Err(e), name)) => {
-                warn!("Auto engine: {} failed: {}", name, e);
-            }
-            Err(e) => {
-                warn!("Auto engine: duckduckgo task panicked: {}", e);
-            }
-        }
-
-        // SearXNG
-        match searxng_handle.await {
-            Ok((Ok(results), name)) => {
-                debug!("Auto: {} returned {} results", name, results.len());
-                engine_results.push((name, results));
-            }
-            Ok((Err(e), name)) => {
-                warn!("Auto engine: {} failed: {}", name, e);
-            }
-            Err(e) => {
-                warn!("Auto engine: searxng task panicked: {}", e);
+        for handle in [ddg_handle, google_handle, bing_handle, searxng_handle] {
+            match handle.await {
+                Ok((Ok(results), name)) => {
+                    debug!("Auto: {} returned {} results", name, results.len());
+                    engine_results.push((name, results));
+                }
+                Ok((Err(e), name)) => {
+                    warn!("Auto engine: {} failed: {}", name, e);
+                }
+                Err(e) => {
+                    warn!("Auto engine: task panicked: {}", e);
+                }
             }
         }
 
