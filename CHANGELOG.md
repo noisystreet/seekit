@@ -5,16 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.2] - 2026-06-19
 
 ### Added
 
+- Brave Search engine (`--engine brave`): HTML scraper with CAPTCHA detection, UA rotation, exponential backoff
 - Google direct engine (`--engine google`): HTML scraper with CAPTCHA detection, UA rotation, exponential backoff
 - Bing direct engine (`--engine bing`): HTML scraper with UA rotation, CAPTCHA detection, ad filtering
-- Auto mode now queries 4 engines in parallel: DuckDuckGo, Google, Bing, SearXNG
-- 16 new unit tests for Google and Bing engines
+- Auto mode now queries 5 engines in parallel: DuckDuckGo, Google, Bing, Brave, SearXNG
+- `repl` and `csv` feature flags: minimal default install, opt-in for REPL/CSV
+- 22 new unit tests for Google, Bing, Brave engines
 
-## [0.2.0] - 2026-06-19
+### Changed
+
+- Default install reduced from ~196 to ~151 crates (feature flags)
+- `cargo install seekit -F repl,csv` for full installation
+
+## [0.1.1] - 2026-06-18
 
 ### Added
 
@@ -24,39 +31,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `client_builder_with_proxy()` helper in `engine/mod.rs`
 - Project-level MCP configuration: `.trae/mcp.json` for Trae IDE
 - Baidu and Sogou search engines in SearXNG default config
+- Release workflow: multi-platform builds (linux x86_64/aarch64, macOS x86_64/arm64) via GitHub Actions
+- `install.sh` — one-command installer: `curl -fsSL https://raw.githubusercontent.com/noisystreet/seekit/main/install.sh | sh`
+- Homebrew formula (`homebrew/Formula/seekit.rb`) for `brew install noisystreet/tap/seekit`
+- `make install` and `make install-home` targets for local builds
+- Installation docs in MANUAL (EN/CN)
 
 ### Changed
 
 - `client_builder_with_proxy` signature: takes explicit `proxy_url: Option<&str>`
 - SearXNG default settings: removed outbound proxy config, added Baidu/Sogou
 - Manual (EN/CN): reorganized proxy docs, added MCP tool parameters, Trae IDE config
-
-## [Unreleased]
-<<<<<<<
-=======
-
-### Added
-
-- Release workflow: multi-platform builds (linux x86_64/aarch64, macOS x86_64/arm64) via GitHub Actions
-- `install.sh` — one-command installer: `curl -fsSL https://raw.githubusercontent.com/noisystreet/seekit/main/install.sh | sh`
-- Homebrew formula (`homebrew/Formula/seekit.rb`) for `brew install noisystreet/tap/seekit`
-- `make install` and `make install-home` targets for local builds
-- Installation docs in MANUAL (EN/CN)
-
-## [0.1.1] - 2026-06-18
-
-### Fixed
->>>>>>>
-
-### Added
-
-- Release workflow: multi-platform builds (linux x86_64/aarch64, macOS x86_64/arm64) via GitHub Actions
-- `install.sh` — one-command installer: `curl -fsSL https://raw.githubusercontent.com/noisystreet/seekit/main/install.sh | sh`
-- Homebrew formula (`homebrew/Formula/seekit.rb`) for `brew install noisystreet/tap/seekit`
-- `make install` and `make install-home` targets for local builds
-- Installation docs in MANUAL (EN/CN)
-
-## [0.1.1] - 2026-06-18
 
 ### Fixed
 

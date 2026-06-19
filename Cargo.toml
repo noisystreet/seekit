@@ -1,6 +1,6 @@
 [package]
 name = "seekit"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 rust-version = "1.81"
 description = "A CLI web search tool using DuckDuckGo, designed for terminal and Agent usage"
