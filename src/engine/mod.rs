@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 pub mod bing;
+pub mod brave;
 pub mod duckduckgo;
 pub mod fusion;
 pub mod google;
@@ -56,6 +57,7 @@ pub enum EngineType {
     DuckDuckGo,
     Google,
     Bing,
+    Brave,
     SearXNG,
     /// 自动使用所有可用引擎并行搜索并融合结果
     Auto,
@@ -69,10 +71,11 @@ impl std::str::FromStr for EngineType {
             "duckduckgo" | "ddg" => Ok(Self::DuckDuckGo),
             "google" | "g" => Ok(Self::Google),
             "bing" | "b" => Ok(Self::Bing),
+            "brave" => Ok(Self::Brave),
             "searxng" | "searx" => Ok(Self::SearXNG),
             "auto" | "all" | "multi" => Ok(Self::Auto),
             _ => Err(format!(
-                "Unknown engine: {}. Use: duckduckgo, google, bing, searxng, auto",
+                "Unknown engine: {}. Use: duckduckgo, google, bing, brave, searxng, auto",
                 s
             )),
         }
