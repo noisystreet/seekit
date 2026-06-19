@@ -37,6 +37,8 @@ jobs:
           target: ${{ matrix.target }}
 
       - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: ${{ matrix.target }}
 
       - name: Install cross-compilation dependencies (aarch64-linux)
         if: matrix.target == 'aarch64-unknown-linux-gnu'
