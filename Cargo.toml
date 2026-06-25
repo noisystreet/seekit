@@ -56,7 +56,7 @@ hex = "0.4"
 async-trait = "0.1"
 
 # REPL interactive mode (optional, enabled via "repl" feature)
-rustyline = { version = "14", optional = true }
+rustyline = { version = "18", optional = true }
 
 # CSV output (optional, enabled via "csv" feature)
 csv = { version = "1", optional = true }
