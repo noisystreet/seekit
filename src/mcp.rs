@@ -79,15 +79,15 @@ fn server_info() -> serde_json::Value {
 fn tool_search_schema() -> serde_json::Value {
     serde_json::json!({
         "name": "search",
-        "description": "Search the web using DuckDuckGo, SearXNG, or multi-engine auto mode. Returns title, URL, snippet, and optionally full page content.",
+        "description": "Search the web using Bing, DuckDuckGo, Google, Brave, SearXNG, or multi-engine auto mode. Returns title, URL, snippet, and optionally full page content.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "query": { "type": "string", "description": "Search query" },
                 "engine": {
                     "type": "string",
-                    "enum": ["duckduckgo", "searxng", "auto"],
-                    "default": "duckduckgo",
+                    "enum": ["bing", "duckduckgo", "google", "brave", "searxng", "auto"],
+                    "default": "bing",
                     "description": "Search engine to use"
                 },
                 "max_results": {
@@ -174,7 +174,7 @@ async fn handle_search_call(
 ) -> std::result::Result<serde_json::Value, (i32, String)> {
     let query = arg_str(args, "query")
         .ok_or_else(|| (-32602, "Missing required argument: query".to_string()))?;
-    let engine = arg_str(args, "engine").unwrap_or("duckduckgo");
+    let engine = arg_str(args, "engine").unwrap_or("bing");
     let max_results = arg_u64(args, "max_results").max(1) as usize;
     let page = arg_u64(args, "page").max(1) as u32;
     let lang = arg_str(args, "lang").unwrap_or("en");
