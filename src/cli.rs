@@ -3,7 +3,7 @@ use clap::Parser;
 /// seekit — A CLI web search tool
 ///
 /// Supports DuckDuckGo, Google, Bing, Brave, SearXNG, and auto (multi-engine fusion) modes.
-/// DuckDuckGo is the default engine (zero config).
+/// Bing is the default engine (zero config).
 ///
 /// Optional features (cargo install seekit -F <feature>):
 ///   repl  Interactive REPL mode (--repl / -i)
@@ -16,7 +16,7 @@ pub struct Cli {
     pub query: Option<String>,
 
     /// Search engine: duckduckgo, google, bing, brave, searxng, auto
-    #[arg(short = 'e', long, default_value = "duckduckgo")]
+    #[arg(short = 'e', long, default_value = "bing")]
     pub engine: String,
 
     /// SearXNG instance URL (required for searxng engine)
