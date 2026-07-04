@@ -373,6 +373,22 @@ mod tests {
     }
 
     #[test]
+    fn test_tool_search_schema_engine_enum_and_default() {
+        let schema = tool_search_schema();
+        let engine_prop = schema["inputSchema"]["properties"]["engine"]
+            .as_object()
+            .unwrap();
+        let engine_enum = engine_prop["enum"].as_array().unwrap();
+        assert!(engine_enum.contains(&serde_json::json!("bing")));
+        assert!(engine_enum.contains(&serde_json::json!("duckduckgo")));
+        assert!(engine_enum.contains(&serde_json::json!("google")));
+        assert!(engine_enum.contains(&serde_json::json!("brave")));
+        assert!(engine_enum.contains(&serde_json::json!("searxng")));
+        assert!(engine_enum.contains(&serde_json::json!("auto")));
+        assert_eq!(engine_prop["default"], "bing");
+    }
+
+    #[test]
     fn test_tool_fetch_schema_has_required_fields() {
         let schema = tool_fetch_schema();
         assert_eq!(schema["name"], "fetch");
