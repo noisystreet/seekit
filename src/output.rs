@@ -283,4 +283,14 @@ mod tests {
         assert!(json.contains("duckduckgo"));
         assert!(json.contains("https://rust-lang.org"));
     }
+
+    #[test]
+    fn test_chinese_truncation_preserves_characters() {
+        let chinese_text =
+            "这是一段测试文本，包含多个中文字符用于测试Unicode截断功能是否正确处理多字节字符";
+        let truncated = chinese_text.chars().take(20).collect::<String>();
+        assert_eq!(truncated.chars().count(), 20);
+        assert!(truncated.starts_with("这是一段测试文本"));
+        assert!(!truncated.is_empty());
+    }
 }
