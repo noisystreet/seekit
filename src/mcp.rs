@@ -407,6 +407,43 @@ mod tests {
     }
 
     #[test]
+    fn test_arg_str_with_numeric_value() {
+        let mut map = serde_json::Map::new();
+        map.insert("key".into(), serde_json::json!(123));
+        assert_eq!(arg_str(&map, "key"), None);
+    }
+
+    #[test]
+    fn test_arg_u64_with_string_value() {
+        let mut map = serde_json::Map::new();
+        map.insert("num".into(), serde_json::json!("42"));
+        assert_eq!(arg_u64(&map, "num"), 0);
+    }
+
+    #[test]
+    fn test_arg_u64_with_bool_value() {
+        let mut map = serde_json::Map::new();
+        map.insert("flag".into(), serde_json::json!(true));
+        assert_eq!(arg_u64(&map, "flag"), 0);
+    }
+
+    #[test]
+    fn test_handle_call_tool_search_missing_query() {
+        let args = serde_json::Map::new();
+        let params = serde_json::json!({
+            "name": "search",
+            "arguments": args
+        });
+        let result = tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(handle_call_tool(&params));
+        assert!(result.is_err());
+        let (code, msg) = result.unwrap_err();
+        assert_eq!(code, -32602);
+        assert!(msg.contains("query"));
+    }
+
+    #[test]
     fn test_dispatch_initialize() {
         let req = JsonRpcRequest {
             jsonrpc: "2.0".into(),
