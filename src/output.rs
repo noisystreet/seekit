@@ -105,8 +105,8 @@ fn print_terminal(response: &SearchResponse) {
             if !content.is_empty() {
                 println!("     \x1b[33m── Content ──────────────────────\x1b[0m");
                 for line in content.lines().take(10) {
-                    if line.len() > 80 {
-                        println!("     {}", &line[..80]);
+                    if line.chars().count() > 80 {
+                        println!("     {}", line.chars().take(80).collect::<String>());
                     } else {
                         println!("     {}", line);
                     }

@@ -83,7 +83,7 @@ fn test_cli_defaults() {
     let cli = Cli::parse_from(&["seekit", "test query"]);
 
     assert_eq!(cli.query.as_deref(), Some("test query"));
-    assert_eq!(cli.engine, "duckduckgo");
+    assert_eq!(cli.engine, "bing");
     assert!(cli.searxng_url.is_none());
     assert_eq!(cli.lang, "en");
     assert_eq!(cli.format, "terminal");
