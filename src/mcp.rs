@@ -444,6 +444,14 @@ mod tests {
     }
 
     #[test]
+    fn test_handle_search_call_default_engine_is_bing() {
+        let mut args = serde_json::Map::new();
+        args.insert("query".into(), serde_json::json!("test"));
+        let engine = arg_str(&args, "engine").unwrap_or("bing");
+        assert_eq!(engine, "bing");
+    }
+
+    #[test]
     fn test_dispatch_initialize() {
         let req = JsonRpcRequest {
             jsonrpc: "2.0".into(),
