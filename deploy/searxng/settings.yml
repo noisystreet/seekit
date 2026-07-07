@@ -18,12 +18,8 @@ server:
   # JSON output is enabled for seekit (see search.formats)
   image_proxy: false
 
-# Use host proxy for outbound access
-outgoing:
-  proxies:
-    http: http://localhost:8118
-    https: http://localhost:8118
-  no_proxy: localhost,127.0.0.1,*.baidu.com,*.sogou.com,*.qq.com,*.163.com,cn
+# Keep only engines accessible from China without proxy
+# (Google, DuckDuckGo, Brave require a proxy that is unreliable with httpx)
 
 ui:
   static_use_hash: true
@@ -46,30 +42,12 @@ search:
   ban_time_on_fail: 10
   max_ban_time_on_fail: 300
 
-# Enabled engines: stable, high-quality results
+# Enabled engines: accessible without proxy from China
 engines:
-  # Google
-  - name: google
-    engine: google
-    shortcut: g
-    disabled: false
-
   # Bing
   - name: bing
     engine: bing
     shortcut: b
-    disabled: false
-
-  # DuckDuckGo
-  - name: duckduckgo
-    engine: duckduckgo
-    shortcut: ddg
-    disabled: false
-
-  # Brave
-  - name: brave
-    engine: brave
-    shortcut: be
     disabled: false
 
   # Wikipedia
@@ -84,16 +62,33 @@ engines:
     shortcut: gh
     disabled: false
 
-  # Engines disabled by default — enable as needed
+  # Baidu
   - name: baidu
     engine: baidu
     shortcut: bd
     disabled: false
 
+  # Sogou
   - name: sogou
     engine: sogou
     shortcut: sg
     disabled: false
+
+  # Engines requiring proxy (disabled by default)
+  - name: google
+    engine: google
+    shortcut: g
+    disabled: true
+
+  - name: duckduckgo
+    engine: duckduckgo
+    shortcut: ddg
+    disabled: true
+
+  - name: brave
+    engine: brave
+    shortcut: be
+    disabled: true
 
   - name: yahoo
     disabled: true
