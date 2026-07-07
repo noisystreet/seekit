@@ -3,29 +3,6 @@
 ## Installation
 
 ### Quick install (Linux / macOS)
-<<<<<<<
-=======
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/noisystreet/seekit/main/install.sh | sh
-```
-
-This automatically detects your OS and architecture, downloads the latest binary from GitHub Releases, and installs it to `/usr/local/bin` (or `~/.local/bin` as fallback).
-
-### Homebrew
-
-```bash
-brew install noisystreet/tap/seekit
-```
-
-### Cargo
-
-```bash
-cargo install seekit
-```
-
-### Build from source
->>>>>>>
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/noisystreet/seekit/main/install.sh | sh
@@ -489,3 +466,15 @@ seekit --clear-cache && seekit "query"
 # Test SearXNG instance directly
 curl "http://localhost:8080/search?q=test&format=json"
 ```
+
+> **Proxy environment variables**: If you have `http_proxy` / `https_proxy` set in your shell environment, both `curl` and seekit (via `reqwest`) will route **all** HTTP traffic through the proxy — including requests to local services like SearXNG. This can cause 502 errors (e.g., "No data received from server or forwarder") when the proxy can't reach the local service. To fix, unset proxy variables before testing:
+>
+> ```bash
+> unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
+> seekit -e searxng "rust"
+> ```
+>
+> Or use `--noproxy` with curl:
+> ```bash
+> curl --noproxy "*" "http://localhost:8080/search?q=test&format=json"
+> ```

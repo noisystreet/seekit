@@ -22,8 +22,6 @@ brew install noisystreet/tap/seekit
 cargo install seekit
 ```
 
-<<<<<<<
-=======
 ### 快速安装（Linux / macOS）
 
 ```bash
@@ -44,7 +42,6 @@ brew install noisystreet/tap/seekit
 cargo install seekit
 ```
 
->>>>>>>
 ### 从源码构建
 
 ```bash
@@ -489,3 +486,15 @@ seekit --clear-cache && seekit "query"
 # 测试 SearXNG 实例是否正常
 curl "http://localhost:8080/search?q=test&format=json"
 ```
+
+> **代理环境变量问题**：如果 shell 环境中设置了 `http_proxy` / `https_proxy`，那么 `curl` 和 seekit（通过 `reqwest` 库）会将**所有** HTTP 流量都通过代理发送——包括发往本地服务（如 SearXNG）的请求。这会导致 502 错误（如 "No data received from server or forwarder"），因为代理无法访问本地地址。解决方法：测试前取消代理环境变量：
+>
+> ```bash
+> unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
+> seekit -e searxng "rust"
+> ```
+>
+> 或者使用 `--noproxy` 选项（curl）：
+> ```bash
+> curl --noproxy "*" "http://localhost:8080/search?q=test&format=json"
+> ```
