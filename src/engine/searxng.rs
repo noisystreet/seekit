@@ -402,4 +402,201 @@ mod tests {
         results.dedup_by(|a, b| a.url == b.url);
         assert_eq!(results.len(), len_before);
     }
+
+    // ── new() ─────────────────────────────────────────────
+
+    #[test]
+    fn test_new_without_proxy() {
+        let engine = SearXNG::new("http://localhost:8080", None).unwrap();
+        assert_eq!(engine.base_url, "http://localhost:8080");
+    }
+
+    #[test]
+    fn test_new_with_proxy() {
+        let engine = SearXNG::new("http://localhost:8080", Some("http://proxy:3128")).unwrap();
+        assert_eq!(engine.base_url, "http://localhost:8080");
+    }
+
+    // ── build_url 扩展测试 ─────────────────────────────────
+
+    #[test]
+    fn test_build_url_page_2() {
+        let engine = SearXNG::new("http://localhost:8080", None).unwrap();
+        let config = EngineConfig {
+            page: 2,
+            ..Default::default()
+        };
+        let url = engine.build_url("rust", &config);
+        assert!(url.contains("pageno=2"));
+    }
+
+    #[test]
+    fn test_build_url_page_3() {
+        let engine = SearXNG::new("http://localhost:8080", None).unwrap();
+        let config = EngineConfig {
+            page: 3,
+            ..Default::default()
+        };
+        let url = engine.build_url("test", &config);
+        assert!(url.contains("pageno=3"));
+    }
+
+    #[test]
+    fn test_build_url_special_chars() {
+        let engine = SearXNG::new("http://localhost:8080", None).unwrap();
+        let config = EngineConfig::default();
+        let url = engine.build_url("c++ & go", &config);
+        // 特殊字符应被编码
+        assert!(!url.contains("c++"));
+        assert!(url.contains('q'));
+        assert!(url.contains("format=json"));
+    }
+
+    // ── parse_response ───────────────────────────────────
+
+    #[test]
+    fn test_parse_response_html_error() {
+        let err = SearXNG::parse_response("<html>404 Not Found</html>", "test", 10);
+        assert!(err.is_err());
+        match err {
+            Err(SearchError::HtmlParse(msg)) => {
+                assert!(msg.contains("HTML"));
+            }
+            _ => panic!("Expected HtmlParse error"),
+        }
+    }
+
+    #[test]
+    fn test_parse_response_invalid_json() {
+        let err = SearXNG::parse_response("{broken json}", "test", 10);
+        assert!(err.is_err());
+        match err {
+            Err(SearchError::HtmlParse(_)) => {} // OK
+            _ => panic!("Expected HtmlParse error"),
+        }
+    }
+
+    #[test]
+    fn test_parse_response_empty_results() {
+        let json = r#"{"query": "test", "results": []}"#;
+        let err = SearXNG::parse_response(json, "test", 10);
+        assert!(err.is_err());
+        match err {
+            Err(SearchError::NoResults { query }) => {
+                assert_eq!(query, "test");
+            }
+            _ => panic!("Expected NoResults error"),
+        }
+    }
+
+    #[test]
+    fn test_parse_response_normal_results() {
+        let json = r#"{
+            "query": "rust",
+            "results": [
+                {
+                    "title": "Rust Lang",
+                    "url": "https://rust-lang.org",
+                    "content": "A systems language"
+                }
+            ]
+        }"#;
+        let results = SearXNG::parse_response(json, "rust", 10).unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].title, "Rust Lang");
+        assert_eq!(results[0].url, "https://rust-lang.org");
+        assert_eq!(results[0].snippet, "A systems language");
+    }
+
+    #[test]
+    fn test_parse_response_missing_title_none() {
+        let json = r#"{
+            "query": "test",
+            "results": [
+                {"title": null, "url": "https://example.com", "content": "no title"}
+            ]
+        }"#;
+        let err = SearXNG::parse_response(json, "test", 10);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(SearchError::NoResults { .. })));
+    }
+
+    #[test]
+    fn test_parse_response_missing_url_none() {
+        let json = r#"{
+            "query": "test",
+            "results": [
+                {"title": "No URL", "url": null, "content": "missing url"}
+            ]
+        }"#;
+        let err = SearXNG::parse_response(json, "test", 10);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(SearchError::NoResults { .. })));
+    }
+
+    #[test]
+    fn test_parse_response_empty_title_skipped() {
+        let json = r#"{
+            "query": "test",
+            "results": [
+                {"title": "", "url": "https://example.com/bad", "content": "empty title"},
+                {"title": "Valid", "url": "https://example.com/ok", "content": "ok"}
+            ]
+        }"#;
+        let results = SearXNG::parse_response(json, "test", 10).unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].title, "Valid");
+    }
+
+    #[test]
+    fn test_parse_response_dedup() {
+        let json = r#"{
+            "query": "test",
+            "results": [
+                {"title": "First",  "url": "https://example.com/a", "content": "first"},
+                {"title": "Second", "url": "https://example.com/a", "content": "second"},
+                {"title": "Third",  "url": "https://example.com/b", "content": "third"}
+            ]
+        }"#;
+        let results = SearXNG::parse_response(json, "test", 10).unwrap();
+        assert_eq!(results.len(), 2, "duplicate URL should be deduped");
+    }
+
+    #[test]
+    fn test_parse_response_max_results_truncation() {
+        let json = r#"{
+            "query": "test",
+            "results": [
+                {"title": "A", "url": "https://example.com/a", "content": "a"},
+                {"title": "B", "url": "https://example.com/b", "content": "b"},
+                {"title": "C", "url": "https://example.com/c", "content": "c"}
+            ]
+        }"#;
+        let results = SearXNG::parse_response(json, "test", 2).unwrap();
+        assert_eq!(results.len(), 2);
+    }
+
+    #[test]
+    fn test_parse_response_content_null_snippet_empty() {
+        let json = r#"{
+            "query": "test",
+            "results": [
+                {"title": "No Content", "url": "https://example.com", "content": null}
+            ]
+        }"#;
+        let results = SearXNG::parse_response(json, "test", 10).unwrap();
+        assert_eq!(results[0].snippet, "");
+    }
+
+    #[test]
+    fn test_parse_response_content_missing_field_snippet_empty() {
+        let json = r#"{
+            "query": "test",
+            "results": [
+                {"title": "No Content", "url": "https://example.com"}
+            ]
+        }"#;
+        let results = SearXNG::parse_response(json, "test", 10).unwrap();
+        assert_eq!(results[0].snippet, "");
+    }
 }

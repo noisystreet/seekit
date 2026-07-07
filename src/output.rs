@@ -293,4 +293,265 @@ mod tests {
         assert!(truncated.starts_with("这是一段测试文本"));
         assert!(!truncated.is_empty());
     }
+
+    // ── OutputFormat::from_str 扩展测试 ──
+
+    #[test]
+    fn test_output_format_aliases() {
+        // tty → Terminal
+        assert_eq!(
+            "tty".parse::<OutputFormat>().unwrap(),
+            OutputFormat::Terminal
+        );
+        // text → Raw
+        assert_eq!("text".parse::<OutputFormat>().unwrap(), OutputFormat::Raw);
+        // md → Markdown
+        assert_eq!(
+            "md".parse::<OutputFormat>().unwrap(),
+            OutputFormat::Markdown
+        );
+        // 空字符串 → Err
+        assert!("".parse::<OutputFormat>().is_err());
+        // 带空格 → Err（当前实现不 trim）
+        assert!(" json ".parse::<OutputFormat>().is_err());
+    }
+
+    #[test]
+    fn test_output_format_case_insensitive() {
+        assert_eq!("JSON".parse::<OutputFormat>().unwrap(), OutputFormat::Json);
+        assert_eq!(
+            "MarkDown".parse::<OutputFormat>().unwrap(),
+            OutputFormat::Markdown
+        );
+        assert_eq!("Raw".parse::<OutputFormat>().unwrap(), OutputFormat::Raw);
+        assert_eq!("Csv".parse::<OutputFormat>().unwrap(), OutputFormat::Csv);
+        assert_eq!(
+            "Tty".parse::<OutputFormat>().unwrap(),
+            OutputFormat::Terminal
+        );
+        assert_eq!("Text".parse::<OutputFormat>().unwrap(), OutputFormat::Raw);
+        assert_eq!(
+            "Md".parse::<OutputFormat>().unwrap(),
+            OutputFormat::Markdown
+        );
+    }
+
+    #[test]
+    fn test_output_format_error_message() {
+        let err = "foobar".parse::<OutputFormat>().unwrap_err();
+        assert!(err.contains("foobar"));
+        assert!(err.contains("terminal, json, raw, csv, or markdown"));
+    }
+
+    // ── build_response 扩展测试 ──
+
+    fn make_result_full(
+        title: &str,
+        url: &str,
+        snippet: &str,
+        content: Option<&str>,
+        score: Option<f64>,
+        sources: Option<Vec<&str>>,
+    ) -> SearchResult {
+        SearchResult {
+            title: title.to_string(),
+            url: url.to_string(),
+            snippet: snippet.to_string(),
+            content: content.map(|s| s.to_string()),
+            score,
+            sources: sources.map(|v| v.iter().map(|s| s.to_string()).collect()),
+        }
+    }
+
+    #[test]
+    fn test_build_response_with_all_fields() {
+        let results = vec![make_result_full(
+            "Rust Lang",
+            "https://rust-lang.org",
+            "A systems language",
+            Some("Rust is fast and safe."),
+            Some(0.95),
+            Some(vec!["google", "duckduckgo"]),
+        )];
+        let response = build_response("rust", "fusion", results, Instant::now());
+        assert_eq!(response.query, "rust");
+        assert_eq!(response.engine, "fusion");
+        assert_eq!(response.results.len(), 1);
+        let r = &response.results[0];
+        assert_eq!(r.title, "Rust Lang");
+        assert_eq!(r.url, "https://rust-lang.org");
+        assert_eq!(r.snippet, "A systems language");
+        assert_eq!(r.content.as_deref(), Some("Rust is fast and safe."));
+        assert_eq!(r.score, Some(0.95));
+        assert_eq!(
+            r.sources,
+            Some(vec!["google".to_string(), "duckduckgo".to_string()])
+        );
+    }
+
+    #[test]
+    fn test_build_response_unicode_query() {
+        let results = vec![make_result("结果1", "https://example.com/1", "摘要1")];
+        let response = build_response("搜索查询", "bing", results, Instant::now());
+        assert_eq!(response.query, "搜索查询");
+        assert_eq!(response.results[0].title, "结果1");
+    }
+
+    // ── JSON 序列化结构测试 ──
+
+    #[test]
+    fn test_json_structure_has_all_keys() {
+        let results = vec![make_result("Title", "https://example.com", "Snippet")];
+        let response = build_response("test", "ddg", results, Instant::now());
+        let json = serde_json::to_value(&response).unwrap();
+        let map = json.as_object().unwrap();
+
+        // 顶层字段
+        assert!(map.contains_key("query"));
+        assert!(map.contains_key("engine"));
+        assert!(map.contains_key("results"));
+        assert!(map.contains_key("total_estimated"));
+        assert!(map.contains_key("took_ms"));
+
+        assert_eq!(map["query"], "test");
+        assert_eq!(map["engine"], "ddg");
+        assert_eq!(map["total_estimated"], 1);
+        assert!(map["took_ms"].as_u64().is_some());
+
+        // results 是数组
+        let results_arr = map["results"].as_array().unwrap();
+        assert_eq!(results_arr.len(), 1);
+        let r = &results_arr[0];
+        assert!(r.get("title").is_some());
+        assert!(r.get("url").is_some());
+        assert!(r.get("snippet").is_some());
+    }
+
+    #[test]
+    fn test_json_skip_serializing_score_sources_when_none() {
+        let results = vec![make_result("Title", "https://example.com", "Snippet")];
+        let response = build_response("t", "ddg", results, Instant::now());
+        let json = serde_json::to_value(&response).unwrap();
+        let result = &json["results"][0];
+        // score 和 sources 为 None 时不应出现在 JSON 中（有 skip_serializing_if）
+        assert!(result.get("score").is_none());
+        assert!(result.get("sources").is_none());
+        // content 没有 skip_serializing_if，None 时会序列化为 null
+        assert!(result.get("content").is_some());
+        assert!(result["content"].is_null());
+    }
+
+    #[test]
+    fn test_json_includes_score_and_sources_when_present() {
+        let results = vec![make_result_full(
+            "Title",
+            "https://example.com",
+            "Snippet",
+            Some("Content here"),
+            Some(0.88),
+            Some(vec!["engine_a", "engine_b"]),
+        )];
+        let response = build_response("t", "fusion", results, Instant::now());
+        let json = serde_json::to_value(&response).unwrap();
+        let result = &json["results"][0];
+
+        assert_eq!(result["score"], serde_json::json!(0.88));
+        assert_eq!(
+            result["sources"],
+            serde_json::json!(["engine_a", "engine_b"])
+        );
+        assert_eq!(result["content"], "Content here");
+    }
+
+    #[test]
+    fn test_json_empty_results_array() {
+        let results: Vec<SearchResult> = vec![];
+        let response = build_response("empty", "ddg", results, Instant::now());
+        let json = serde_json::to_value(&response).unwrap();
+        assert_eq!(json["results"], serde_json::json!([]));
+        assert_eq!(json["total_estimated"], 0);
+    }
+
+    // ── JSON 错误输出格式测试（输出.output.rs 级别的错误 JSON 结构验证）──
+
+    #[test]
+    fn test_json_error_format_structure() {
+        // 模拟 handle_search_error 中使用的 JSON 错误结构
+        let error_obj = serde_json::json!({
+            "error": "No results found for query: test",
+            "query": "test",
+            "engine": "duckduckgo",
+        });
+        let json = serde_json::to_string_pretty(&error_obj).unwrap();
+        assert!(json.contains("\"error\""));
+        assert!(json.contains("\"query\""));
+        assert!(json.contains("\"engine\""));
+        assert!(json.contains("No results found for query: test"));
+        assert!(json.contains("duckduckgo"));
+
+        // 验证能正确反序列化
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed["error"], "No results found for query: test");
+        assert_eq!(parsed["query"], "test");
+        assert_eq!(parsed["engine"], "duckduckgo");
+    }
+
+    #[test]
+    fn test_json_error_format_with_special_chars() {
+        let error_obj = serde_json::json!({
+            "error": "HTTP 429: Too Many Requests (rate limited)",
+            "query": "rust web 框架",
+            "engine": "google",
+        });
+        let json = serde_json::to_string_pretty(&error_obj).unwrap();
+        assert!(json.contains("429"));
+        assert!(json.contains("rust web 框架"));
+
+        // 反序列化验证中文正常
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed["query"], "rust web 框架");
+    }
+
+    // ── Unicode 截断扩展测试 ──
+
+    #[test]
+    fn test_unicode_truncation_mixed_cjk_latin() {
+        let mixed = "Rust语言 2024 版本特性 🦀 cool!";
+        // 取前 10 个 char
+        let truncated: String = mixed.chars().take(10).collect();
+        assert_eq!(truncated.chars().count(), 10);
+        // emoji 占用多个字节但 chars() 处理正确
+        assert!(truncated.starts_with("Rust语言 2"));
+    }
+
+    #[test]
+    fn test_unicode_truncation_edge_cases() {
+        // 空字符串
+        let empty = "";
+        let truncated: String = empty.chars().take(10).collect();
+        assert!(truncated.is_empty());
+
+        // 少于截断长度
+        let short = "你好";
+        let truncated: String = short.chars().take(10).collect();
+        assert_eq!(truncated, "你好");
+
+        // 正好等于截断长度
+        let exact = "🦀🦀🦀";
+        let truncated: String = exact.chars().take(3).collect();
+        assert_eq!(truncated, "🦀🦀🦀");
+    }
+
+    // ── SearchResponse 工具方法测试 ──
+
+    #[test]
+    fn test_search_response_display_trait() {
+        let results = vec![make_result("Title", "https://example.com", "Snippet")];
+        let response = build_response("test", "ddg", results, Instant::now());
+        // Debug 输出应包含关键信息
+        let debug_str = format!("{:?}", response);
+        assert!(debug_str.contains("test"));
+        assert!(debug_str.contains("ddg"));
+        assert!(debug_str.contains("Title"));
+    }
 }

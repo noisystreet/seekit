@@ -676,6 +676,135 @@ mod tests {
         // Should produce no output (skip=true)
         assert!(buf.is_empty());
     }
+
+    // ---- JsonRpcRequest 反序列化 ----
+
+    #[test]
+    fn test_json_rpc_request_deserialize_full() {
+        let json = r#"{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}"#;
+        let req: JsonRpcRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(req.jsonrpc, "2.0");
+        assert_eq!(req.id, Some(serde_json::json!(1)));
+        assert_eq!(req.method, "tools/list");
+    }
+
+    #[test]
+    fn test_json_rpc_request_deserialize_null_id() {
+        let json =
+            r#"{"jsonrpc":"2.0","id":null,"method":"notifications/initialized","params":{}}"#;
+        let req: JsonRpcRequest = serde_json::from_str(json).unwrap();
+        // serde 将 JSON null 映射为 Option::None
+        assert_eq!(req.id, None);
+        assert_eq!(req.method, "notifications/initialized");
+    }
+
+    #[test]
+    fn test_json_rpc_request_deserialize_missing_params_defaults_null() {
+        let json = r#"{"jsonrpc":"2.0","id":1,"method":"tools/list"}"#;
+        let req: JsonRpcRequest = serde_json::from_str(json).unwrap();
+        // serde_json::Value 的默认值是 Null
+        assert_eq!(req.params, serde_json::Value::Null);
+    }
+
+    // ---- server_info 补充验证 ----
+
+    #[test]
+    fn test_server_info_contains_version() {
+        let info = server_info();
+        assert!(info["serverInfo"]["version"]
+            .as_str()
+            .is_some_and(|v| !v.is_empty()));
+    }
+
+    // ---- handle_call_tool fetch 缺少必需参数 ----
+
+    #[test]
+    fn test_handle_call_tool_fetch_missing_url() {
+        let args = serde_json::Map::new();
+        let params = serde_json::json!({
+            "name": "fetch",
+            "arguments": args
+        });
+        let result = tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(handle_call_tool(&params));
+        assert!(result.is_err());
+        let (code, msg) = result.unwrap_err();
+        assert_eq!(code, -32602);
+        assert!(msg.contains("url"));
+    }
+
+    // ---- handle_call_tool search 缺少 arguments 字段 ----
+
+    #[test]
+    fn test_handle_call_tool_search_missing_arguments_key() {
+        let params = serde_json::json!({
+            "name": "search"
+            // 没有 "arguments" 字段
+        });
+        let result = tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(handle_call_tool(&params));
+        assert!(result.is_err());
+        let (code, msg) = result.unwrap_err();
+        assert_eq!(code, -32602);
+        assert!(msg.contains("arguments"));
+    }
+
+    // ---- dispatch_request tools/call 带 name 但缺少 arguments ----
+
+    #[test]
+    fn test_dispatch_tools_call_search_missing_arguments() {
+        let req = JsonRpcRequest {
+            jsonrpc: "2.0".into(),
+            id: Some(serde_json::json!(1)),
+            method: "tools/call".into(),
+            params: serde_json::json!({"name": "search"}),
+        };
+        let result = tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(dispatch_request(req));
+        assert!(result.is_ok());
+        let resp = result.unwrap();
+        let err = resp.error.unwrap();
+        assert_eq!(err.code, -32602);
+        assert!(err.message.contains("arguments"));
+    }
+
+    // ---- process_line tools/call 带 name 但缺少 arguments ----
+
+    #[tokio::test]
+    async fn test_process_line_tools_call_search_missing_arguments() {
+        let mut buf: Vec<u8> = Vec::new();
+        let line = r#"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search"}}"#;
+        process_line(&mut buf, line).await.unwrap();
+        let output = String::from_utf8(buf).unwrap();
+        assert!(output.contains("\"code\":-32602"));
+        assert!(output.contains("arguments"));
+    }
+
+    // ---- dispatch_request tools/call fetch 缺少必需参数 ----
+
+    #[test]
+    fn test_dispatch_tools_call_fetch_missing_url() {
+        let req = JsonRpcRequest {
+            jsonrpc: "2.0".into(),
+            id: Some(serde_json::json!(1)),
+            method: "tools/call".into(),
+            params: serde_json::json!({
+                "name": "fetch",
+                "arguments": {}
+            }),
+        };
+        let result = tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(dispatch_request(req));
+        assert!(result.is_ok());
+        let resp = result.unwrap();
+        let err = resp.error.unwrap();
+        assert_eq!(err.code, -32602);
+        assert!(err.message.contains("url"));
+    }
 }
 
 /// 启动 MCP stdio server
