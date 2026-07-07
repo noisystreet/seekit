@@ -389,4 +389,162 @@ mod tests {
         assert_eq!(merged.len(), 1);
         assert_eq!(merged[0].sources.as_ref().unwrap().len(), 2);
     }
+
+    // ── normalize_url 更多边界 ────────────────────────────
+
+    #[test]
+    fn test_normalize_url_www_https_bare() {
+        assert_eq!(
+            normalize_url("https://www.example.com"),
+            "https://example.com"
+        );
+    }
+
+    #[test]
+    fn test_normalize_url_www_http_with_path() {
+        assert_eq!(
+            normalize_url("http://www.example.com/path"),
+            "http://example.com/path"
+        );
+    }
+
+    #[test]
+    fn test_normalize_url_trailing_slash_no_www() {
+        assert_eq!(normalize_url("http://example.com/"), "http://example.com");
+    }
+
+    #[test]
+    fn test_normalize_url_multiple_trailing_slashes() {
+        assert_eq!(
+            normalize_url("https://example.com/path///"),
+            "https://example.com/path"
+        );
+    }
+
+    #[test]
+    fn test_normalize_url_empty() {
+        assert_eq!(normalize_url(""), "");
+    }
+
+    // ── merge 更多场景 ─────────────────────────────────────
+
+    #[test]
+    fn test_merge_empty_engine_with_other_results() {
+        // 某些引擎返回空，其他引擎有结果
+        let results = vec![
+            ("ddg", vec![]),
+            (
+                "searxng",
+                vec![make_result("A", "https://example.com/a", "")],
+            ),
+        ];
+        let merged = ResultMerger::merge(results, 10);
+        assert_eq!(merged.len(), 1);
+    }
+
+    #[test]
+    fn test_merge_all_engines_return_empty() {
+        let results = vec![("ddg", vec![]), ("searxng", vec![])];
+        let merged = ResultMerger::merge(results, 10);
+        assert_eq!(merged.len(), 0);
+    }
+
+    #[test]
+    fn test_merge_http_https_not_deduped() {
+        // http 和 https 是不同的协议，normalize_url 不会合并它们
+        let results = vec![
+            (
+                "ddg",
+                vec![make_result("HTTP", "http://example.com/page", "")],
+            ),
+            (
+                "searxng",
+                vec![make_result("HTTPS", "https://example.com/page", "")],
+            ),
+        ];
+        let merged = ResultMerger::merge(results, 10);
+        assert_eq!(merged.len(), 2);
+    }
+
+    #[test]
+    fn test_merge_three_engines_same_url() {
+        // 三个引擎返回同一 URL，应合并为一条，sources 包含三个引擎
+        let results = vec![
+            ("ddg", vec![make_result("A", "https://example.com", "")]),
+            ("google", vec![make_result("A", "https://example.com", "")]),
+            ("bing", vec![make_result("A", "https://example.com", "")]),
+        ];
+        let merged = ResultMerger::merge(results, 10);
+        assert_eq!(merged.len(), 1);
+        assert_eq!(merged[0].sources.as_ref().unwrap().len(), 3);
+    }
+
+    #[test]
+    fn test_merge_max_results_zero() {
+        let results = vec![("ddg", vec![make_result("A", "https://example.com/a", "")])];
+        let merged = ResultMerger::merge(results, 0);
+        assert_eq!(merged.len(), 0);
+    }
+
+    #[test]
+    fn test_merge_score_exact_calculation() {
+        // 2 引擎，同一 URL 都在 pos 1
+        // score = 2/1 + 2/1 = 4.0
+        let results = vec![
+            ("ddg", vec![make_result("A", "https://example.com/a", "")]),
+            (
+                "searxng",
+                vec![make_result("A", "https://example.com/a", "")],
+            ),
+        ];
+        let merged = ResultMerger::merge(results, 10);
+        assert_eq!(merged.len(), 1);
+        assert!((merged[0].score.unwrap() - 4.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_merge_score_position_matters() {
+        // 2 引擎
+        // ddg:   pos 1 (score=2/1=2.0) -> other_url
+        //        pos 2 (score=2/2=1.0) -> target_url
+        // searxng: pos 1 (score=2/1=2.0) -> target_url
+        // target_url 总分 = 1.0 + 2.0 = 3.0
+        // other_url 总分 = 2.0
+        let results = vec![
+            (
+                "ddg",
+                vec![
+                    make_result("Other", "https://example.com/other", ""),
+                    make_result("Target", "https://example.com/target", ""),
+                ],
+            ),
+            (
+                "searxng",
+                vec![make_result("Target", "https://example.com/target", "")],
+            ),
+        ];
+        let merged = ResultMerger::merge(results, 10);
+        assert_eq!(merged.len(), 2);
+        // Target 在 ddg 的 pos 2 和 searxng 的 pos 1 出现
+        assert!((merged[0].score.unwrap() - 3.0).abs() < f64::EPSILON);
+        assert!((merged[1].score.unwrap() - 2.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_merge_same_engine_duplicate_url_accumulates_score() {
+        // 同一引擎返回两次相同 URL
+        // num_engines=1, pos 1: 1/1=1.0, pos 2: 1/2=0.5 → total=1.5
+        // sources 中不应重复添加同一引擎名
+        let results = vec![(
+            "ddg",
+            vec![
+                make_result("A", "https://example.com/a", ""),
+                make_result("A", "https://example.com/a", ""),
+            ],
+        )];
+        let merged = ResultMerger::merge(results, 10);
+        assert_eq!(merged.len(), 1);
+        assert!((merged[0].score.unwrap() - 1.5).abs() < f64::EPSILON);
+        assert_eq!(merged[0].sources.as_ref().unwrap().len(), 1);
+    }
 }
