@@ -46,7 +46,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 urlencoding = "2"
 
 # File paths (cache & config dirs)
-dirs = "6"
+dirs = "7"
 
 # Cache (SHA256 key hashing)
 sha2 = "0.10"
