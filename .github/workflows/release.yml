@@ -57,7 +57,7 @@ jobs:
           tar czf ../../../$BINARY_NAME-${{ matrix.target }}.tar.gz $BINARY_NAME${{ matrix.suffix }}
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.target }}
           path: $BINARY_NAME-${{ matrix.target }}.tar.gz
